@@ -57,7 +57,7 @@ func (s *service) Login(input *Login) (string, time.Duration, *response.User, er
 		return "", 0, nil, response.InternalServerError("Error al generar token de acceso")
 	}
 
-	userResponse := response.UserToResponse(user, nil)
+	userResponse := response.UserToResponse(user, &token)
 
 	return token, expiration, userResponse, nil
 }

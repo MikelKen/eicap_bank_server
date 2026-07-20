@@ -25,14 +25,15 @@ func Connect(cfg *config.Config) *gorm.DB {
 		db, err = gorm.Open(postgres.Open(cfg.DatabaseURL), &gorm.Config{})
 		if err == nil {
 			log.Println("Database connected successfully after %d attempt(s)", i+1)
+
 			if cfg.RunMigration {
 				migrate(db)
 			}
+
 			if cfg.RunSeeder {
 				log.Printf("Running seeder...")
 				seed.Run(db, cfg.AdminPasswordOne)
 			}
-
 			return db
 		}
 		log.Printf("Failed to connet to database, retryig (%d/%d): %v", i+1, maxRetries, err)
@@ -49,7 +50,7 @@ func migrate(db *gorm.DB) {
 	if err != nil {
 		log.Fatalf("Failed to get migration dir: %v", err)
 	}
-
+	log.Println("Resolved migration dir:", dir) // 👈 agrega esto
 	sqlDB, err := db.DB()
 	if err != nil {
 		log.Fatalf("Failed to get raw db: %v", err)
@@ -58,4 +59,5 @@ func migrate(db *gorm.DB) {
 	if err := goose.Up(sqlDB, dir); err != nil {
 		log.Fatalf("Failed to run migrations: %v", err)
 	}
+	log.Println("Migrations applied successfully")
 }
