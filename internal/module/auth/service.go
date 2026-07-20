@@ -1,0 +1,63 @@
+package auth
+
+import (
+	"errors"
+	"time"
+
+	"github.com/Eicap/EICAP-BANK/server/internal/config"
+	"github.com/Eicap/EICAP-BANK/server/internal/model"
+	"github.com/Eicap/EICAP-BANK/server/internal/response"
+	"github.com/Eicap/EICAP-BANK/server/pkg"
+	"gorm.io/gorm"
+)
+
+type Service interface {
+	Login(input *Login) (string, time.Duration, *response.User, error)
+}
+
+type userRepo interface {
+	GetByEmail(email string) (*model.User, error)
+}
+
+type service struct {
+	userRepo userRepo
+	cfg      *config.Config
+}
+
+func NewService(userRepo userRepo, cfg *config.Config) Service {
+	return &service{userRepo: userRepo, cfg: cfg}
+}
+
+func (s *service) Login(input *Login) (string, time.Duration, *response.User, error) {
+	var user *model.User
+	var err error
+
+	if input.Email != nil {
+		user, err = s.userRepo.GetByEmail(*input.Email)
+	}
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return "", 0, nil, response.Unauthorized("Credenciales inválidas")
+		}
+		return "", 0, nil, response.InternalServerError("Error al buscar usuario")
+	}
+
+	if pkg.Compare(input.Password, user.Password) != nil {
+		return "", 0, nil, response.InternalServerError("Credenciales inválidas")
+	}
+
+	expiration, err := time.ParseDuration(s.cfg.JWTExpiration)
+	if err != nil {
+		return "", 0, nil, response.InternalServerError("Error de configuración del servidor")
+	}
+
+	token, err := pkg.GenerateToken(user, s.cfg.JWTSecret, expiration)
+	if err != nil {
+		return "", 0, nil, response.InternalServerError("Error al generar token de acceso")
+	}
+
+	userResponse := response.UserToResponse(user, nil)
+
+	return token, expiration, userResponse, nil
+}

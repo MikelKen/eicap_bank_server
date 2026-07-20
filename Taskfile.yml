@@ -1,0 +1,7 @@
+version: "3"
+
+tasks:
+  gen:
+    desc: Generate GORM code
+    cmds:
+      - gorm gen -i ./internal/model -o ./internal/generated
