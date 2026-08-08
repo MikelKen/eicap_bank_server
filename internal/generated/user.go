@@ -4,27 +4,34 @@ package generated
 
 import (
 	"github.com/Eicap/EICAP-BANK/server/internal/enum"
+	"github.com/Eicap/EICAP-BANK/server/internal/model"
 	"github.com/google/uuid"
 	"gorm.io/cli/gorm/field"
 	"gorm.io/gorm"
 )
 
 var User = struct {
-	ID        field.Field[uuid.UUID]
-	Name      field.String
-	Email     field.String
-	Password  field.String
-	Role      field.Struct[enum.Permission]
-	CreatedAt field.Time
-	UpdatedAt field.Time
-	DeletedAt field.Field[gorm.DeletedAt]
+	ID           field.Field[uuid.UUID]
+	Name         field.String
+	Email        field.String
+	Password     field.String
+	Avatar       field.String
+	Role         field.Struct[enum.Permission]
+	Clients      field.Slice[model.Client]
+	CashSessions field.Slice[model.CashSession]
+	CreatedAt    field.Time
+	UpdatedAt    field.Time
+	DeletedAt    field.Field[gorm.DeletedAt]
 }{
-	ID:        field.Field[uuid.UUID]{}.WithColumn("id"),
-	Name:      field.String{}.WithColumn("name"),
-	Email:     field.String{}.WithColumn("email"),
-	Password:  field.String{}.WithColumn("password"),
-	Role:      field.Struct[enum.Permission]{}.WithName("Role"),
-	CreatedAt: field.Time{}.WithColumn("created_at"),
-	UpdatedAt: field.Time{}.WithColumn("updated_at"),
-	DeletedAt: field.Field[gorm.DeletedAt]{}.WithColumn("deleted_at"),
+	ID:           field.Field[uuid.UUID]{}.WithColumn("id"),
+	Name:         field.String{}.WithColumn("name"),
+	Email:        field.String{}.WithColumn("email"),
+	Password:     field.String{}.WithColumn("password"),
+	Avatar:       field.String{}.WithColumn("avatar"),
+	Role:         field.Struct[enum.Permission]{}.WithName("Role"),
+	Clients:      field.Slice[model.Client]{}.WithName("Clients"),
+	CashSessions: field.Slice[model.CashSession]{}.WithName("CashSessions"),
+	CreatedAt:    field.Time{}.WithColumn("created_at"),
+	UpdatedAt:    field.Time{}.WithColumn("updated_at"),
+	DeletedAt:    field.Field[gorm.DeletedAt]{}.WithColumn("deleted_at"),
 }

@@ -50,7 +50,7 @@ func migrate(db *gorm.DB) {
 	if err != nil {
 		log.Fatalf("Failed to get migration dir: %v", err)
 	}
-	log.Println("Resolved migration dir:", dir) // 👈 agrega esto
+	log.Println("Resolved migration dir:", dir)
 	sqlDB, err := db.DB()
 	if err != nil {
 		log.Fatalf("Failed to get raw db: %v", err)

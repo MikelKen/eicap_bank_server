@@ -14,7 +14,7 @@ type User struct {
 	Email    *string `gorm:"uniqueIndex"`
 	Password string
 	Avatar   string
-	Role     enum.Permission
+	Role     enum.Permission `gorm:"type:enum('admin','student');default:'student';not null;"`
 
 	Clients      []Client      `gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	CashSessions []CashSession `gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`

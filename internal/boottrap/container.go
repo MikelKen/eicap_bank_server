@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"github.com/Eicap/EICAP-BANK/server/internal/config"
 	"github.com/Eicap/EICAP-BANK/server/internal/module/auth"
+	"github.com/Eicap/EICAP-BANK/server/internal/module/client"
 	"github.com/Eicap/EICAP-BANK/server/internal/module/user"
 	"github.com/gofiber/fiber/v3"
 	"gorm.io/gorm"
@@ -24,10 +25,15 @@ func NewContainer(db *gorm.DB, cfg *config.Config) *Container {
 	authService := auth.NewService(userRepo, cfg)
 	authHandler := auth.NewHandler(authService, cfg.AppEnv == "production")
 
+	clientRepo := client.NewRepo(db)
+	clientService := client.NewService(clientRepo)
+	clientHandler := client.NewHandler(clientService, cfg.JWTSecret)
+
 	return &Container{
 		Handlers: []RouterRegister{
 			userHandler,
 			authHandler,
+			clientHandler,
 		},
 	}
 }
