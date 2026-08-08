@@ -44,6 +44,7 @@ func seedUser(db *gorm.DB, id uuid.UUID, name, email, password string, role enum
 		Name:     name,
 		Email:    &emailCopy,
 		Password: hashedPassword,
+		Avatar:   "",
 		Role:     role,
 	}
 

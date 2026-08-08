@@ -18,8 +18,8 @@ type Account struct {
 	ClientID uuid.UUID `gorm:"type:uuid;"`
 	Client   Client    `gorm:"foreignKey:ClientID;references:ID"`
 
-	TypeAccpuntID uuid.UUID   `gorm:"type:uuid;"`
-	TypeAccount   TypeAccount `gorm:"foreignKey:TypeAccpuntID;references:ID"`
+	TypeAccountID uuid.UUID   `gorm:"type:uuid;"`
+	TypeAccount   TypeAccount `gorm:"foreignKey:TypeAccountID;references:ID"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time

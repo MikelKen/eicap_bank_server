@@ -24,7 +24,7 @@ func Connect(cfg *config.Config) *gorm.DB {
 		var err error
 		db, err = gorm.Open(postgres.Open(cfg.DatabaseURL), &gorm.Config{})
 		if err == nil {
-			log.Println("Database connected successfully after %d attempt(s)", i+1)
+			log.Printf("Database connected successfully after %d attempt(s)", i+1)
 
 			if cfg.RunMigration {
 				migrate(db)

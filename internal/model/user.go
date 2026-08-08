@@ -16,7 +16,8 @@ type User struct {
 	Avatar   string
 	Role     enum.Permission
 
-	Clients []Client `gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	Clients      []Client      `gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	CashSessions []CashSession `gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
