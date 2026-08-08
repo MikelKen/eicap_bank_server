@@ -13,7 +13,10 @@ type User struct {
 	Name     string
 	Email    *string `gorm:"uniqueIndex"`
 	Password string
+	Avatar   string
 	Role     enum.Permission
+
+	Clients []Client `gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time

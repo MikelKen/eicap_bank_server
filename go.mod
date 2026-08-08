@@ -10,8 +10,8 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/pressly/goose/v3 v3.27.2
+	github.com/shopspring/decimal v1.4.0
 	golang.org/x/crypto v0.53.0
-	golang.org/x/mod v0.36.0
 	gorm.io/cli/gorm v0.2.4
 	gorm.io/driver/postgres v1.6.0
 	gorm.io/gorm v1.31.2
