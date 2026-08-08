@@ -1,6 +1,8 @@
 package middleware
 
 import (
+	"log"
+
 	"github.com/Eicap/EICAP-BANK/server/pkg"
 	jwtware "github.com/gofiber/contrib/v3/jwt"
 	"github.com/gofiber/fiber/v3"
@@ -8,6 +10,7 @@ import (
 )
 
 func JWT(jwtSecret string) fiber.Handler {
+	log.Println("jwtSecret: ", jwtSecret)
 	return jwtware.New(jwtware.Config{
 		SigningKey: jwtware.SigningKey{Key: []byte(jwtSecret)},
 		Extractor:  extractors.FromCookie("token"),

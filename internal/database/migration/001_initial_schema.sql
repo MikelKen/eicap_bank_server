@@ -19,7 +19,7 @@ CREATE INDEX idx_users_email ON users(email);
 CREATE TABLE clients (
     id UUID PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    ci VARCHAR(255) UNIQUE,
+    ci VARCHAR(255),
     sex VARCHAR(255),
     birth_date VARCHAR(255),
     user_id UUID NOT NULL REFERENCES users(id),
@@ -29,8 +29,7 @@ CREATE TABLE clients (
 );
 
 CREATE INDEX idx_clients_deleted_at ON clients(deleted_at);
-CREATE INDEX idx_clients_name ON clients(name);
-CREATE INDEX idx_clients_ci ON clients(ci);
+CREATE UNIQUE INDEX idx_clients_user_id_ci ON clients(user_id, ci) WHERE deleted_at IS NULL;
 
 CREATE TABLE type_accounts (
     id UUID PRIMARY KEY,
@@ -50,7 +49,7 @@ CREATE TABLE accounts (
     balance NUMERIC,
     status VARCHAR(255),
     client_id UUID REFERENCES clients(id),
-    type_accpunt_id UUID REFERENCES type_accounts(id),
+    type_account_id UUID REFERENCES type_accounts(id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     deleted_at TIMESTAMPTZ
@@ -58,7 +57,7 @@ CREATE TABLE accounts (
 
 CREATE INDEX idx_accounts_deleted_at ON accounts(deleted_at);
 CREATE INDEX idx_accounts_client_id ON accounts(client_id);
-CREATE INDEX idx_accounts_type_account_id ON accounts(type_accpunt_id);
+CREATE INDEX idx_accounts_type_account_id ON accounts(type_account_id);
 
 
 CREATE TABLE type_operations (

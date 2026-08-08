@@ -4,14 +4,16 @@ import (
 	"context"
 
 	"github.com/Eicap/EICAP-BANK/server/internal/response"
+	"github.com/Eicap/EICAP-BANK/server/pkg/pagination"
 	"github.com/google/uuid"
 )
 
 type Service interface {
-	Create(ctx context.Context, input *Create) error
+	Create(ctx context.Context, userID uuid.UUID, input *Create) error
 	Update(ctx context.Context, id uuid.UUID, input *Update) error
 	FindByID(ctx context.Context, id uuid.UUID) (*response.Client, error)
 	FindAll(ctx context.Context) ([]response.Client, int64, error)
+	FindAllByUserID(ctx context.Context, userID uuid.UUID, filter ClientFilter) (pagination.Response[response.Client], error)
 	GetClient(ctx context.Context, data string) (*response.Client, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 }
@@ -24,12 +26,16 @@ func NewService(repo Repo) Service {
 	return &service{repo: repo}
 }
 
-func (s *service) Create(ctx context.Context, input *Create) error {
-	if _, err := s.repo.GetClient(input.Ci); err == nil {
-		return response.Conflict("El C.I. ya está registrado")
+func (s *service) Create(ctx context.Context, userID uuid.UUID, input *Create) error {
+	exists, err := s.repo.ExistCiByUser(ctx, userID, input.Ci)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return response.Conflict("Ya registraste un cliente con este C.I.")
 	}
 
-	client := input.ToModel()
+	client := input.ToModel(userID)
 
 	if err := s.repo.Create(client); err != nil {
 		return err
@@ -71,6 +77,16 @@ func (s *service) FindAll(ctx context.Context) ([]response.Client, int64, error)
 
 	items := response.ClientsToResponse(clients)
 	return items, total, nil
+}
+
+func (s *service) FindAllByUserID(ctx context.Context, userID uuid.UUID, filter ClientFilter) (pagination.Response[response.Client], error) {
+	clients, total, err := s.repo.FindAllByUserID(ctx, userID, filter)
+	if err != nil {
+		return pagination.Response[response.Client]{}, err
+	}
+
+	items := response.ClientsToResponse(clients)
+	return pagination.NewResponse(items, total, filter.Params), nil
 }
 
 func (s *service) GetClient(ctx context.Context, data string) (*response.Client, error) {

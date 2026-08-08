@@ -6,6 +6,7 @@ import (
 	"github.com/Eicap/EICAP-BANK/server/internal/generated"
 	"github.com/Eicap/EICAP-BANK/server/internal/model"
 	"github.com/Eicap/EICAP-BANK/server/internal/response"
+	"github.com/Eicap/EICAP-BANK/server/pkg/pagination"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -16,7 +17,8 @@ type Repo interface {
 	GetClient(data string) (*model.Client, error) // get client by name o c.i.
 	FindByID(id uuid.UUID) (*model.Client, error)
 	FindAll(stx context.Context) ([]model.Client, int64, error)
-	GetAllClientByUserID(userID uuid.UUID) (*model.Client, error)
+	FindAllByUserID(ctx context.Context, userID uuid.UUID, filter ClientFilter) ([]model.Client, int64, error)
+	ExistCiByUser(ctx context.Context, userID uuid.UUID, ci string) (bool, error)
 	Exist(id uuid.UUID) error
 	Delete(id uuid.UUID) error
 }
@@ -71,12 +73,33 @@ func (r *repo) FindAll(ctx context.Context) ([]model.Client, int64, error) {
 
 }
 
-func (r *repo) GetAllClientByUserID(userID uuid.UUID) (*model.Client, error) {
-	var client model.Client
-	if err := r.db.Where(generated.Client.UserID.Eq(userID)).First(&client).Error; err != nil {
-		return nil, err
+func (r *repo) FindAllByUserID(ctx context.Context, userID uuid.UUID, filter ClientFilter) ([]model.Client, int64, error) {
+	return pagination.GormPaginate[model.Client](
+		r.db.WithContext(ctx).Model(&model.Client{}).Where(generated.Client.UserID.Eq(userID)),
+		filter.Params,
+		func(db *gorm.DB) *gorm.DB {
+			if filter.Search != "" {
+				search := "%" + filter.Search + "%"
+				db = db.Where("name ILIKE ? OR ci ILIKE ?", search, search)
+			}
+
+			order := "desc"
+			if filter.Order == "asc" {
+				order = "asc"
+			}
+			return db.Order("created_at " + order)
+		},
+	)
+}
+func (r *repo) ExistCiByUser(ctx context.Context, userID uuid.UUID, ci string) (bool, error) {
+	var count int64
+	if err := r.db.WithContext(ctx).Model(&model.Client{}).
+		Where(generated.Client.UserID.Eq(userID)).
+		Where(generated.Client.Ci.Eq(ci)).
+		Count(&count).Error; err != nil {
+		return false, err
 	}
-	return &client, nil
+	return count > 0, nil
 }
 
 func (r *repo) Exist(id uuid.UUID) error {

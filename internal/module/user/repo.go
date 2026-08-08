@@ -67,7 +67,10 @@ func (r *repo) FindAll(ctx context.Context, filter UserFilter) ([]model.User, in
 				roles := strings.Split(filter.Roles, ",")
 				db = db.Where("role IN ?", roles)
 			}
-			return db.Order("created_at" + filter.Order)
+			if filter.Order != "asc" {
+				filter.Order = "desc"
+			}
+			return db.Order("created_at " + filter.Order)
 		},
 	)
 }

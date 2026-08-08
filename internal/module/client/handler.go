@@ -13,6 +13,7 @@ type Handler interface {
 	Update(ctx fiber.Ctx) error
 	FindByID(ctx fiber.Ctx) error
 	FindAll(ctx fiber.Ctx) error
+	FindAllByUserID(ctx fiber.Ctx) error
 	GetClient(ctx fiber.Ctx) error
 	Delete(ctx fiber.Ctx) error
 }
@@ -32,6 +33,8 @@ func (h *handler) RegisterRoutes(v1 fiber.Router) {
 
 	client.Post("/", h.Create)
 
+	client.Get("/mine", h.FindAllByUserID)
+
 	client.Put("/:id", h.Update)
 
 	client.Get("/:id", h.FindByID)
@@ -49,7 +52,12 @@ func (h *handler) Create(c fiber.Ctx) error {
 		return err
 	}
 
-	if err := h.service.Create(c.Context(), &input); err != nil {
+	claims := middleware.User(c)
+	if claims == nil {
+		return response.Unauthorized("Acceso no autorizado")
+	}
+
+	if err := h.service.Create(c.Context(), claims.UserID, &input); err != nil {
 		return err
 	}
 	return c.Status(fiber.StatusCreated).JSON(response.OK("Cliente creado exitosamente", nil))
@@ -70,6 +78,25 @@ func (h *handler) Update(c fiber.Ctx) error {
 		return err
 	}
 	return c.JSON(response.OK("Cliente actualizado exitosamente", nil))
+}
+
+func (h *handler) FindAllByUserID(c fiber.Ctx) error {
+	claims := middleware.User(c)
+	if claims == nil {
+		return response.Unauthorized("Acceso no autorizado")
+	}
+
+	var filter ClientFilter
+	if err := c.Bind().Query(&filter); err != nil {
+		return err
+	}
+	filter.SetDefaults()
+
+	result, err := h.service.FindAllByUserID(c.Context(), claims.UserID, filter)
+	if err != nil {
+		return err
+	}
+	return c.JSON(response.OK("Clientes encontrados exitosamente", result))
 }
 
 func (h *handler) FindByID(c fiber.Ctx) error {

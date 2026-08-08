@@ -1,6 +1,8 @@
 package user
 
 import (
+	"github.com/google/uuid"
+
 	"github.com/Eicap/EICAP-BANK/server/internal/enum"
 	"github.com/Eicap/EICAP-BANK/server/internal/middleware"
 	"github.com/Eicap/EICAP-BANK/server/internal/response"
@@ -10,6 +12,7 @@ import (
 type Handler interface {
 	RegisterRoutes(v1 fiber.Router)
 	Create(ctx fiber.Ctx) error
+	Me(ctx fiber.Ctx) error
 	FindByID(ctx fiber.Ctx) error
 	FindAll(ctx fiber.Ctx) error
 }
@@ -32,8 +35,13 @@ func (h *handler) RegisterRoutes(v1 fiber.Router) {
 		h.Create,
 	)
 
-	user.Get("/id",
-		h.FindByID,
+	user.Get("/me",
+		h.Me,
+	)
+
+	user.Get("/:id",
+		middleware.RequirePermission(enum.Admin),
+		h.FindByID, // admin consulta cualquier usuario
 	)
 
 	user.Get("/",
@@ -60,13 +68,26 @@ func (h *handler) Create(c fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(response.OK("Usuario creado exitosamente", nil))
 }
 
-func (h *handler) FindByID(c fiber.Ctx) error {
+func (h *handler) Me(c fiber.Ctx) error {
 	claims := middleware.User(c)
 	result, err := h.service.FindByID(c.Context(), claims.UserID)
 	if err != nil {
 		return err
 	}
 
+	return c.JSON(response.OK("Usuario encontrado exitosamente", result))
+}
+
+func (h *handler) FindByID(c fiber.Ctx) error {
+	id, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return response.BadRequest("ID inválido")
+	}
+
+	result, err := h.service.FindByID(c.Context(), id)
+	if err != nil {
+		return err
+	}
 	return c.JSON(response.OK("Usuario encontrado exitosamente", result))
 }
 

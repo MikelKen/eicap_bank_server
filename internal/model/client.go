@@ -10,11 +10,11 @@ import (
 type Client struct {
 	ID        uuid.UUID `gorm:"type:uuid;primaryKey;"`
 	Name      string
-	Ci        string `gorm:"uniqueIndex"`
+	Ci        string `gorm:"uniqueIndex:idx_user_ci"`
 	Sex       string
 	BirthDate string
 
-	UserID uuid.UUID `gorm:"type:uuid;not null;"`
+	UserID uuid.UUID `gorm:"type:uuid;not null;uniqueIndex:idx_user_ci"`
 	User   User      `gorm:"foreignKey:UserID;references:ID"`
 
 	Accounts []Account `gorm:"foreignKey:ClientID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
