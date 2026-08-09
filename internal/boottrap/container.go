@@ -4,6 +4,7 @@ import (
 	"github.com/Eicap/EICAP-BANK/server/internal/config"
 	"github.com/Eicap/EICAP-BANK/server/internal/module/auth"
 	"github.com/Eicap/EICAP-BANK/server/internal/module/client"
+	typeaccount "github.com/Eicap/EICAP-BANK/server/internal/module/type_account"
 	"github.com/Eicap/EICAP-BANK/server/internal/module/user"
 	"github.com/gofiber/fiber/v3"
 	"gorm.io/gorm"
@@ -29,11 +30,16 @@ func NewContainer(db *gorm.DB, cfg *config.Config) *Container {
 	clientService := client.NewService(clientRepo)
 	clientHandler := client.NewHandler(clientService, cfg.JWTSecret)
 
+	typeAccountRepo := typeaccount.NewRepo(db)
+	typeAccountService := typeaccount.NewService(typeAccountRepo)
+	typeAccountHandler := typeaccount.NewHandler(typeAccountService, cfg.JWTSecret)
+
 	return &Container{
 		Handlers: []RouterRegister{
 			userHandler,
 			authHandler,
 			clientHandler,
+			typeAccountHandler,
 		},
 	}
 }
