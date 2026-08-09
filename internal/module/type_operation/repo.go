@@ -15,6 +15,7 @@ type Repo interface {
 	Create(input *model.TypeOperation) error
 	Update(input *model.TypeOperation) error
 	FindByID(id uuid.UUID) (*model.TypeOperation, error)
+	FindByCode(code string) (*model.TypeOperation, error)
 	FindAll(ctx context.Context, filter TypeOperationFilter) ([]model.TypeOperation, int64, error)
 	Exist(id uuid.UUID) error
 	Delete(id uuid.UUID) error
@@ -44,6 +45,13 @@ func (r *repo) FindByID(id uuid.UUID) (*model.TypeOperation, error) {
 	return &typeOperation, nil
 }
 
+func (r *repo) FindByCode(code string) (*model.TypeOperation, error) {
+	var t model.TypeOperation
+	if err := r.db.Where(generated.TypeOperation.Code.Eq(code)).First(&t).Error; err != nil {
+		return nil, err
+	}
+	return &t, nil
+}
 func (r *repo) FindAll(ctx context.Context, filter TypeOperationFilter) ([]model.TypeOperation, int64, error) {
 	return pagination.GormPaginate[model.TypeOperation](
 		r.db.WithContext(ctx).Model(&model.TypeOperation{}),
