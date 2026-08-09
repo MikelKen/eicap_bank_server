@@ -10,6 +10,12 @@ import (
 	"github.com/google/uuid"
 )
 
+// OperationRecorder lo implementa el servicio de bank_operations para registrar
+// la apertura de la cuenta como una operación bancaria (APC).
+type OperationRecorder interface {
+	CreateAccountOpening(ctx context.Context, accountID uuid.UUID) error
+}
+
 type Service interface {
 	Create(ctx context.Context, input *Create) error
 	Update(ctx context.Context, id uuid.UUID, input *Update) error
@@ -23,10 +29,11 @@ type service struct {
 	repo            Repo
 	clientRepo      client.Repo
 	typeAccountRepo typeaccount.Repo
+	recorder        OperationRecorder
 }
 
-func NewService(repo Repo, clientRepo client.Repo, typeAccountRepo typeaccount.Repo) Service {
-	return &service{repo: repo, clientRepo: clientRepo, typeAccountRepo: typeAccountRepo}
+func NewService(repo Repo, clientRepo client.Repo, typeAccountRepo typeaccount.Repo, recorder OperationRecorder) Service {
+	return &service{repo: repo, clientRepo: clientRepo, typeAccountRepo: typeAccountRepo, recorder: recorder}
 }
 
 func (s *service) Create(ctx context.Context, input *Create) error {
@@ -48,7 +55,10 @@ func (s *service) Create(ctx context.Context, input *Create) error {
 	if err := s.repo.Create(acc); err != nil {
 		return err
 	}
-	return nil
+
+	// La creación de una cuenta se registra como operación bancaria (APC)
+	// para el cliente y su cuenta.
+	return s.recorder.CreateAccountOpening(ctx, acc.ID)
 }
 
 func (s *service) Update(ctx context.Context, id uuid.UUID, input *Update) error {

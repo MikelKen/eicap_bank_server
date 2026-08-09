@@ -18,6 +18,14 @@ import (
 
 type Service interface {
 	Create(ctx context.Context, userID uuid.UUID, input *Create) error
+	// CreateAccountOpening registra la apertura de una cuenta (APC).
+	CreateAccountOpening(ctx context.Context, accountID uuid.UUID) error
+	// RecordCashOpening registra la apertura de caja (APCA).
+	RecordCashOpening(ctx context.Context, sessionID uuid.UUID, amount decimal.Decimal) error
+	// RecordCashClosing registra el cierre de caja (CICA).
+	RecordCashClosing(ctx context.Context, sessionID uuid.UUID, amount decimal.Decimal) error
+	// SessionTotals devuelve ingresos y egresos acumulados en una sesión de caja.
+	SessionTotals(ctx context.Context, sessionID uuid.UUID) (decimal.Decimal, decimal.Decimal, error)
 	FindByID(ctx context.Context, id uuid.UUID) (*response.BankOperation, error)
 	FindAll(ctx context.Context, filter BankOperationFilter) (pagination.Response[response.BankOperation], error)
 }
@@ -38,14 +46,41 @@ func NewService(repo Repo, accountRepo account.Repo, typeOperationRepo typeopera
 	}
 }
 
+// Create registra una operación bancaria. Solo las operaciones de tipo ING/EGR
+// afectan el balance de la cuenta y registran una OperationInformation; el resto
+// de operaciones (APC, APCA, CICA...) se registran sin información adicional.
 func (s *service) Create(ctx context.Context, userID uuid.UUID, input *Create) error {
-	if input.Amount.LessThanOrEqual(decimal.Zero) {
-		return response.BadRequest("El monto debe ser mayor a cero")
+	if input.Amount.IsNegative() {
+		return response.BadRequest("El monto no puede ser negativo")
 	}
 
 	typeOp, err := s.typeOperationRepo.FindByCode(input.TypeOperationCode)
 	if err != nil {
 		return response.NotFound("Tipo de operación no encontrado")
+	}
+
+	switch input.TypeOperationCode {
+	case CodeIncome, CodeExpense:
+		return s.createIncomeOrExpense(ctx, userID, input, typeOp)
+	default:
+		return s.createOther(ctx, input, typeOp)
+	}
+}
+
+func (s *service) createIncomeOrExpense(ctx context.Context, userID uuid.UUID, input *Create, typeOp *model.TypeOperation) error {
+	if input.Amount.LessThanOrEqual(decimal.Zero) {
+		return response.BadRequest("El monto debe ser mayor a cero")
+	}
+
+	if input.AccountID == nil {
+		return response.BadRequest("La cuenta es obligatoria para esta operación")
+	}
+
+	if input.Info == nil {
+		return response.BadRequest("La información de la operación es obligatoria")
+	}
+	if input.Info.Origin == "" || input.Info.Reason == "" || input.Info.Destination == "" {
+		return response.BadRequest("La información de la operación está incompleta (origin, reason, destination)")
 	}
 
 	session, err := s.cashSessionRepo.FindOpenByUserID(ctx, userID)
@@ -56,7 +91,7 @@ func (s *service) Create(ctx context.Context, userID uuid.UUID, input *Create) e
 		return err
 	}
 
-	acc, err := s.accountRepo.FindByID(input.AccountID)
+	acc, err := s.accountRepo.FindByID(*input.AccountID)
 	if err != nil {
 		return response.NotFound("Cuenta no encontrada")
 	}
@@ -72,10 +107,6 @@ func (s *service) Create(ctx context.Context, userID uuid.UUID, input *Create) e
 			return response.BadRequest("Fondos insuficientes en la cuenta")
 		}
 		endBalance = previousBalance.Sub(input.Amount)
-	default:
-		// La validación del DTO (oneof=ING EGR) ya evita llegar aquí,
-		// pero se deja como defensa extra.
-		return response.BadRequest("Este endpoint solo admite operaciones de tipo ING o EGR")
 	}
 
 	code, err := s.repo.NextCode(ctx)
@@ -90,12 +121,10 @@ func (s *service) Create(ctx context.Context, userID uuid.UUID, input *Create) e
 		Import:          input.Amount,
 		EndBalance:      endBalance,
 		TypeOperationID: typeOp.ID,
-		CashSessionID:   session.ID,
+		CashSessionID:   &session.ID,
 		AccountID:       input.AccountID,
 	}
 
-	// Solo ING/EGR llevan OperationInformation — el DTO ya lo exige como required,
-	// así que aquí siempre viene no-nulo para este endpoint.
 	info := &model.OperationInformation{
 		Origin:      input.Info.Origin,
 		Reason:      input.Info.Reason,
@@ -103,7 +132,101 @@ func (s *service) Create(ctx context.Context, userID uuid.UUID, input *Create) e
 		Details:     input.Info.Details,
 	}
 
-	return s.repo.CreateIncomeOrExpense(ctx, operation, info, endBalance)
+	return s.repo.Create(ctx, operation, info)
+}
+
+func (s *service) createOther(ctx context.Context, input *Create, typeOp *model.TypeOperation) error {
+	var acc *model.Account
+	if input.AccountID != nil {
+		var err error
+		acc, err = s.accountRepo.FindByID(*input.AccountID)
+		if err != nil {
+			return response.NotFound("Cuenta no encontrada")
+		}
+	}
+
+	previousBalance := decimal.Zero
+	if acc != nil {
+		previousBalance = acc.Balance
+	}
+
+	code, err := s.repo.NextCode(ctx)
+	if err != nil {
+		return err
+	}
+
+	operation := &model.BankOperation{
+		Code:            code,
+		Date:            time.Now(),
+		PreviousBalance: previousBalance,
+		Import:          input.Amount,
+		EndBalance:      previousBalance,
+		TypeOperationID: typeOp.ID,
+		AccountID:       input.AccountID,
+	}
+
+	// Las operaciones que no son ING/EGR no registran OperationInformation.
+	return s.repo.Create(ctx, operation, nil)
+}
+
+func (s *service) CreateAccountOpening(ctx context.Context, accountID uuid.UUID) error {
+	typeOp, err := s.typeOperationRepo.FindByCode(CodeAccountOpen)
+	if err != nil {
+		return response.NotFound("Tipo de operación no encontrado")
+	}
+
+	code, err := s.repo.NextCode(ctx)
+	if err != nil {
+		return err
+	}
+
+	operation := &model.BankOperation{
+		Code:            code,
+		Date:            time.Now(),
+		PreviousBalance: decimal.Zero,
+		Import:          decimal.Zero,
+		EndBalance:      decimal.Zero,
+		TypeOperationID: typeOp.ID,
+		AccountID:       &accountID,
+	}
+
+	return s.repo.Create(ctx, operation, nil)
+}
+
+func (s *service) RecordCashOpening(ctx context.Context, sessionID uuid.UUID, amount decimal.Decimal) error {
+	return s.recordCash(ctx, sessionID, amount, CodeCashOpen)
+}
+
+func (s *service) RecordCashClosing(ctx context.Context, sessionID uuid.UUID, amount decimal.Decimal) error {
+	return s.recordCash(ctx, sessionID, amount, CodeCashClose)
+}
+
+func (s *service) recordCash(ctx context.Context, sessionID uuid.UUID, amount decimal.Decimal, code string) error {
+	typeOp, err := s.typeOperationRepo.FindByCode(code)
+	if err != nil {
+		return response.NotFound("Tipo de operación no encontrado")
+	}
+
+	operationCode, err := s.repo.NextCode(ctx)
+	if err != nil {
+		return err
+	}
+
+	operation := &model.BankOperation{
+		Code:            operationCode,
+		Date:            time.Now(),
+		PreviousBalance: decimal.Zero,
+		Import:          amount,
+		EndBalance:      decimal.Zero,
+		TypeOperationID: typeOp.ID,
+		CashSessionID:   &sessionID,
+	}
+
+	return s.repo.Create(ctx, operation, nil)
+}
+
+func (s *service) SessionTotals(ctx context.Context, sessionID uuid.UUID) (decimal.Decimal, decimal.Decimal, error) {
+	return s.repo.SessionTotals(ctx, sessionID)
 }
 
 func (s *service) FindByID(ctx context.Context, id uuid.UUID) (*response.BankOperation, error) {

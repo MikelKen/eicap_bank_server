@@ -19,9 +19,9 @@ func main() {
 
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{cfg.AllowOrigins},
-		AllowMethods:     []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
+		AllowMethods:     []string{"GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
-		AllowCredentials: false,
+		AllowCredentials: true,
 	}))
 
 	container := bootstrap.NewContainer(db, cfg)

@@ -9,6 +9,7 @@ import (
 type Handler interface {
 	RegisterRoutes(v1 fiber.Router)
 	Login(c fiber.Ctx) error
+	Logout(c fiber.Ctx) error
 }
 
 type handler struct {
@@ -23,6 +24,7 @@ func NewHandler(service Service, isProduction bool) Handler {
 func (h *handler) RegisterRoutes(v1 fiber.Router) {
 	auth := v1.Group("/auth")
 	auth.Post("/login", h.Login)
+	auth.Post("/logout", h.Logout)
 }
 
 func (h *handler) Login(c fiber.Ctx) error {
@@ -39,4 +41,9 @@ func (h *handler) Login(c fiber.Ctx) error {
 	c.Cookie(pkg.DefaultCookieConfig(h.isProduction).NewAuthCookie(token, expiration))
 
 	return c.Status(fiber.StatusOK).JSON(response.OK("Login exitoso", userResponse))
+}
+
+func (h *handler) Logout(c fiber.Ctx) error {
+	c.Cookie(pkg.ClearAuthCookie(h.isProduction))
+	return c.JSON(response.OK("Sesión cerrada exitosamente", nil))
 }

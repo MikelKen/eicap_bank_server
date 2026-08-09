@@ -87,7 +87,7 @@ func (r *repo) FindOpenByUserID(ctx context.Context, userID uuid.UUID) (*model.C
 	var session model.CashSession
 	if err := r.db.WithContext(ctx).
 		Where(generated.CashSession.UserID.Eq(userID)).
-		Where(generated.CashSession.State.Eq("open")).
+		Where(generated.CashSession.State.Eq(StateOpen)).
 		First(&session).Error; err != nil {
 		return nil, err
 	}

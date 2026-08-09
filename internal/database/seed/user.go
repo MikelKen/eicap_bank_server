@@ -19,7 +19,7 @@ func SeedUsers(db *gorm.DB, passOne string) {
 func seedUser(db *gorm.DB, id uuid.UUID, name, email, password string, role enum.Permission) {
 	emailCopy := email
 	if password == "" {
-		log.Println("Skipping %S: no password configured", email)
+		log.Printf("Skipping %s: no password configured", email)
 		return
 	}
 

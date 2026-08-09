@@ -19,7 +19,6 @@ type Config struct {
 	JWTExpiration string
 
 	AdminPasswordOne string
-	AdminPasswordTwo string
 }
 
 func Load() *Config {

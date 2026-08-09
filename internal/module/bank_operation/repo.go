@@ -13,11 +13,13 @@ import (
 )
 
 type Repo interface {
-	// CreateIncomeOrExpense crea la operación, opcionalmente su OperationInformation,
-	// y actualiza el balance de la cuenta — todo en una sola transacción.
-	CreateIncomeOrExpense(ctx context.Context, operation *model.BankOperation, info *model.OperationInformation, newBalance decimal.Decimal) error
+	// Create registra la operación en una transacción: crea la operación, si `info` no es nil
+	// crea su OperationInformation (solo ING/EGR), y si la operación tiene cuenta actualiza su balance.
+	Create(ctx context.Context, operation *model.BankOperation, info *model.OperationInformation) error
 	FindByID(ctx context.Context, id uuid.UUID) (*model.BankOperation, error)
 	FindAll(ctx context.Context, filter BankOperationFilter) ([]model.BankOperation, int64, error)
+	// SessionTotals devuelve la suma de ingresos y egresos registrados durante una sesión de caja.
+	SessionTotals(ctx context.Context, sessionID uuid.UUID) (income, expense decimal.Decimal, err error)
 	NextCode(ctx context.Context) (string, error)
 	ExistCode(ctx context.Context, code string) (bool, error)
 }
@@ -30,7 +32,7 @@ func NewRepo(db *gorm.DB) Repo {
 	return &repo{db: db}
 }
 
-func (r *repo) CreateIncomeOrExpense(ctx context.Context, operation *model.BankOperation, info *model.OperationInformation, newBalance decimal.Decimal) error {
+func (r *repo) Create(ctx context.Context, operation *model.BankOperation, info *model.OperationInformation) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(operation).Error; err != nil {
 			return err
@@ -43,10 +45,12 @@ func (r *repo) CreateIncomeOrExpense(ctx context.Context, operation *model.BankO
 			}
 		}
 
-		if err := tx.Model(&model.Account{}).
-			Where("id = ?", operation.AccountID).
-			Update("balance", newBalance).Error; err != nil {
-			return err
+		if operation.AccountID != nil {
+			if err := tx.Model(&model.Account{}).
+				Where("id = ?", *operation.AccountID).
+				Update("balance", operation.EndBalance).Error; err != nil {
+				return err
+			}
 		}
 
 		return nil
@@ -87,6 +91,39 @@ func (r *repo) FindAll(ctx context.Context, filter BankOperationFilter) ([]model
 			return db.Order("bank_operations.date " + order)
 		},
 	)
+}
+
+func (r *repo) SessionTotals(ctx context.Context, sessionID uuid.UUID) (income, expense decimal.Decimal, err error) {
+	income = decimal.Zero
+	expense = decimal.Zero
+
+	type totalRow struct {
+		Code  string
+		Total decimal.Decimal
+	}
+
+	var rows []totalRow
+	if err := r.db.WithContext(ctx).
+		Model(&model.BankOperation{}).
+		Select("type_operations.code AS code, COALESCE(SUM(bank_operations.import), 0) AS total").
+		Joins("JOIN type_operations ON type_operations.id = bank_operations.type_operation_id").
+		Where("bank_operations.cash_session_id = ?", sessionID).
+		Where("type_operations.code IN ?", []string{CodeIncome, CodeExpense}).
+		Group("type_operations.code").
+		Scan(&rows).Error; err != nil {
+		return decimal.Zero, decimal.Zero, err
+	}
+
+	for _, row := range rows {
+		switch row.Code {
+		case CodeIncome:
+			income = row.Total
+		case CodeExpense:
+			expense = row.Total
+		}
+	}
+
+	return income, expense, nil
 }
 
 const codeLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"

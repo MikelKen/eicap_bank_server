@@ -45,8 +45,6 @@ func NewContainer(db *gorm.DB, cfg *config.Config) *Container {
 	typeOperationHandler := typeoperation.NewHandler(typeOperationService, cfg.JWTSecret)
 
 	accountRepo := account.NewRepo(db)
-	accountService := account.NewService(accountRepo, clientRepo, typeAccountRepo)
-	accountHandler := account.NewHandler(accountService, cfg.JWTSecret)
 
 	denominationRepo := denomination.NewRepo(db)
 	denominationService := denomination.NewService(denominationRepo)
@@ -57,12 +55,16 @@ func NewContainer(db *gorm.DB, cfg *config.Config) *Container {
 	cashCountHandler := cashcount.NewHandler(cashCountService, cfg.JWTSecret)
 
 	cashSessionRepo := cashsession.NewRepo(db)
-	cashSessionService := cashsession.NewService(cashSessionRepo, denominationRepo) // reusa el repo ya creado
-	cashSessionHandler := cashsession.NewHandler(cashSessionService, cfg.JWTSecret)
 
 	bankOperationRepo := bankoperation.NewRepo(db)
 	bankOperationService := bankoperation.NewService(bankOperationRepo, accountRepo, typeOperationRepo, cashSessionRepo)
 	bankOperationHandler := bankoperation.NewHandler(bankOperationService, cfg.JWTSecret)
+
+	cashSessionService := cashsession.NewService(cashSessionRepo, denominationRepo, bankOperationService)
+	cashSessionHandler := cashsession.NewHandler(cashSessionService, cfg.JWTSecret)
+
+	accountService := account.NewService(accountRepo, clientRepo, typeAccountRepo, bankOperationService)
+	accountHandler := account.NewHandler(accountService, cfg.JWTSecret)
 
 	return &Container{
 		Handlers: []RouterRegister{

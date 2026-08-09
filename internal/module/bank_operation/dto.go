@@ -1,15 +1,17 @@
 package bankoperation
 
 import (
-	"github.com/google/uuid"
-
 	"github.com/Eicap/EICAP-BANK/server/pkg/pagination"
+	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 )
 
 const (
-	CodeIncome  = "ING" // Ingreso
-	CodeExpense = "EGR" // Egreso
+	CodeIncome      = "ING"  // Ingreso
+	CodeExpense     = "EGR"  // Egreso
+	CodeAccountOpen = "APC"  // Apertura de Cuenta
+	CodeCashOpen    = "APCA" // Apertura de Caja
+	CodeCashClose   = "CICA" // Cierre de Caja
 )
 
 type BankOperationFilter struct {
@@ -23,16 +25,17 @@ func (f *BankOperationFilter) SetDefaults() {
 }
 
 // OperationInformationInput solo se exige cuando TypeOperationCode es ING o EGR.
+// Para el resto de operaciones (APC, APCA, CICA...) no se registra información.
 type OperationInformationInput struct {
-	Origin      string `json:"origin" validate:"required"`
-	Reason      string `json:"reason" validate:"required"`
-	Destination string `json:"destination" validate:"required"`
+	Origin      string `json:"origin"`
+	Reason      string `json:"reason"`
+	Destination string `json:"destination"`
 	Details     string `json:"details"`
 }
 
 type Create struct {
-	TypeOperationCode string                     `json:"type_operation_code" validate:"required,oneof=ING EGR"`
-	AccountID         uuid.UUID                  `json:"account_id" validate:"required"`
-	Amount            decimal.Decimal            `json:"amount" validate:"required"`
-	Info              *OperationInformationInput `json:"info" validate:"required"`
+	TypeOperationCode string                     `json:"type_operation_code" validate:"required,oneof=ING EGR APC APCA CICA"`
+	AccountID         *uuid.UUID                 `json:"account_id"`
+	Amount            decimal.Decimal            `json:"amount"`
+	Info              *OperationInformationInput `json:"info"`
 }

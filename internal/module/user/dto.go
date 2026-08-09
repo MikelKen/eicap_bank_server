@@ -18,7 +18,7 @@ func (f *UserFilter) SetDefaults() {
 
 type Create struct {
 	Name     string          `json:"name" validate:"required"`
-	Email    *string         `form:"email" validate:"required_without=UserName,omitempty,email"`
+	Email    *string         `json:"email" validate:"omitempty,email"`
 	Password string          `json:"password" validate:"required"`
 	Role     enum.Permission `json:"role" validate:"required,oneof=admin student"`
 }

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/Eicap/EICAP-BANK/server/internal/model"
+	cashcount "github.com/Eicap/EICAP-BANK/server/internal/module/cash_count"
 	"github.com/Eicap/EICAP-BANK/server/internal/module/denomination"
 	"github.com/Eicap/EICAP-BANK/server/internal/response"
 	"github.com/Eicap/EICAP-BANK/server/pkg/pagination"
@@ -13,6 +14,14 @@ import (
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 )
+
+// OperationRecorder lo implementa el servicio de bank_operations para dejar
+// constancia de la apertura/cierre de caja y calcular el monto esperado.
+type OperationRecorder interface {
+	RecordCashOpening(ctx context.Context, sessionID uuid.UUID, amount decimal.Decimal) error
+	RecordCashClosing(ctx context.Context, sessionID uuid.UUID, amount decimal.Decimal) error
+	SessionTotals(ctx context.Context, sessionID uuid.UUID) (income, expense decimal.Decimal, err error)
+}
 
 type Service interface {
 	Open(ctx context.Context, userID uuid.UUID, input *Open) error
@@ -25,10 +34,11 @@ type Service interface {
 type service struct {
 	repo             Repo
 	denominationRepo denomination.Repo
+	recorder         OperationRecorder
 }
 
-func NewService(repo Repo, denominationRepo denomination.Repo) Service {
-	return &service{repo: repo, denominationRepo: denominationRepo}
+func NewService(repo Repo, denominationRepo denomination.Repo, recorder OperationRecorder) Service {
+	return &service{repo: repo, denominationRepo: denominationRepo, recorder: recorder}
 }
 
 func (s *service) Open(ctx context.Context, userID uuid.UUID, input *Open) error {
@@ -51,7 +61,12 @@ func (s *service) Open(ctx context.Context, userID uuid.UUID, input *Open) error
 		UserID:        userID,
 	}
 
-	return s.repo.CreateWithCounts(ctx, session, counts)
+	if err := s.repo.CreateWithCounts(ctx, session, counts); err != nil {
+		return err
+	}
+
+	// La apertura de caja queda registrada como operación bancaria (APCA).
+	return s.recorder.RecordCashOpening(ctx, session.ID, total)
 }
 
 func (s *service) Close(ctx context.Context, userID uuid.UUID, sessionID uuid.UUID, input *Close) error {
@@ -73,10 +88,12 @@ func (s *service) Close(ctx context.Context, userID uuid.UUID, sessionID uuid.UU
 		return err
 	}
 
-	// TODO: cuando exista el módulo de bank_operations, el "expected" debe calcularse como
-	// OpeningAmount + depósitos - retiros registrados durante la sesión.
-	// Por ahora se usa OpeningAmount como placeholder.
-	expected := session.OpeningAmount
+	// Monto esperado = apertura + ingresos (depósitos) - egresos (retiros) de la sesión.
+	income, expense, err := s.recorder.SessionTotals(ctx, session.ID)
+	if err != nil {
+		return err
+	}
+	expected := session.OpeningAmount.Add(income).Sub(expense)
 
 	session.State = StateClosed
 	session.ClosingDate = time.Now()
@@ -84,11 +101,16 @@ func (s *service) Close(ctx context.Context, userID uuid.UUID, sessionID uuid.UU
 	session.ExpectedAmount = expected
 	session.DifferenceAmount = total.Sub(expected)
 
-	return s.repo.UpdateWithCounts(ctx, session, counts)
+	if err := s.repo.UpdateWithCounts(ctx, session, counts); err != nil {
+		return err
+	}
+
+	// El cierre de caja queda registrado como operación bancaria (CICA).
+	return s.recorder.RecordCashClosing(ctx, session.ID, total)
 }
 
 // buildCounts valida las denominaciones, calcula subtotales y arma los model.CashCount + total.
-func (s *service) buildCounts(ctx context.Context, inputs []CountInput, typ string) ([]model.CashCount, decimal.Decimal, error) {
+func (s *service) buildCounts(ctx context.Context, inputs []cashcount.CountInput, typ string) ([]model.CashCount, decimal.Decimal, error) {
 	seen := make(map[string]bool, len(inputs))
 	counts := make([]model.CashCount, 0, len(inputs))
 	total := decimal.Zero

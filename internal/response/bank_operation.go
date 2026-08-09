@@ -36,16 +36,16 @@ type BankOperation struct {
 	EndBalance        string                `json:"end_balance"`
 	TypeOperationID   string                `json:"type_operation_id"`
 	TypeOperationCode string                `json:"type_operation_code,omitempty"`
-	AccountID         string                `json:"account_id"`
+	AccountID         string                `json:"account_id,omitempty"`
 	AccountNumber     string                `json:"account_number,omitempty"`
-	CashSessionID     string                `json:"cash_session_id"`
+	CashSessionID     string                `json:"cash_session_id,omitempty"`
 	Info              *OperationInformation `json:"info,omitempty"`
 
 	CreatedAt time.Time `json:"created_at"`
 }
 
 func BankOperationToResponse(b *model.BankOperation) *BankOperation {
-	return &BankOperation{
+	resp := &BankOperation{
 		ID:                b.ID.String(),
 		Code:              b.Code,
 		Date:              b.Date,
@@ -54,12 +54,21 @@ func BankOperationToResponse(b *model.BankOperation) *BankOperation {
 		EndBalance:        b.EndBalance.StringFixed(2),
 		TypeOperationID:   b.TypeOperationID.String(),
 		TypeOperationCode: b.TypeOperation.Code,
-		AccountID:         b.AccountID.String(),
-		AccountNumber:     b.Account.Number,
-		CashSessionID:     b.CashSessionID.String(),
 		Info:              OperationInformationToResponse(b.OperationInformation),
 		CreatedAt:         b.CreatedAt,
 	}
+
+	if b.AccountID != nil {
+		resp.AccountID = b.AccountID.String()
+	}
+	if b.Account != nil {
+		resp.AccountNumber = b.Account.Number
+	}
+	if b.CashSessionID != nil {
+		resp.CashSessionID = b.CashSessionID.String()
+	}
+
+	return resp
 }
 
 func BankOperationsToResponse(list []model.BankOperation) []BankOperation {

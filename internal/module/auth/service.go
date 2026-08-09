@@ -29,13 +29,7 @@ func NewService(userRepo userRepo, cfg *config.Config) Service {
 }
 
 func (s *service) Login(input *Login) (string, time.Duration, *response.User, error) {
-	var user *model.User
-	var err error
-
-	if input.Email != nil {
-		user, err = s.userRepo.GetByEmail(*input.Email)
-	}
-
+	user, err := s.userRepo.GetByEmail(input.Email)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return "", 0, nil, response.Unauthorized("Credenciales inválidas")
@@ -43,8 +37,12 @@ func (s *service) Login(input *Login) (string, time.Duration, *response.User, er
 		return "", 0, nil, response.InternalServerError("Error al buscar usuario")
 	}
 
-	if pkg.Compare(input.Password, user.Password) != nil {
-		return "", 0, nil, response.InternalServerError("Credenciales inválidas")
+	if user == nil {
+		return "", 0, nil, response.Unauthorized("Credenciales inválidas")
+	}
+
+	if err := pkg.Compare(input.Password, user.Password); err != nil {
+		return "", 0, nil, response.Unauthorized("Credenciales inválidas")
 	}
 
 	expiration, err := time.ParseDuration(s.cfg.JWTExpiration)

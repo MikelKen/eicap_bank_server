@@ -19,11 +19,11 @@ type BankOperation struct {
 	TypeOperationID uuid.UUID     `gorm:"type:uuid;"`
 	TypeOperation   TypeOperation `gorm:"foreignKey:TypeOperationID;references:ID"`
 
-	CashSessionID uuid.UUID   `gorm:"type:uuid;"`
-	CashSession   CashSession `gorm:"foreignKey:CashSessionID;references:ID"`
+	CashSessionID *uuid.UUID   `gorm:"type:uuid;"`
+	CashSession   *CashSession `gorm:"foreignKey:CashSessionID;references:ID"`
 
-	AccountID uuid.UUID `gorm:"type:uuid;"`
-	Account   Account   `gorm:"foreignKey:AccountID;references:ID"`
+	AccountID *uuid.UUID `gorm:"type:uuid;"`
+	Account   *Account   `gorm:"foreignKey:AccountID;references:ID"`
 
 	OperationInformation *OperationInformation `gorm:"foreignKey:BankOperationID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 
