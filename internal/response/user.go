@@ -7,12 +7,12 @@ import (
 )
 
 type User struct {
-	ID    string `json:"id"`
-	Name  string `json:"name"`
-	Email string `json:"email"`
-	Role  string `json:"role"`
-
-	Token string `json:"token,omitempty"`
+	ID     string `json:"id"`
+	Name   string `json:"name"`
+	Email  string `json:"email"`
+	Role   string `json:"role"`
+	Avatar string `json:"avatar"`
+	Token  string `json:"token,omitempty"`
 
 	CreatedAt time.Time  `json:"created_at"`
 	UpdatedAt time.Time  `json:"updated_at"`
@@ -45,6 +45,7 @@ func UserToResponse(user *model.User, token *string) *User {
 		Name:      user.Name,
 		Email:     ifPtr(user.Email),
 		Role:      user.Role.String(),
+		Avatar:    user.Avatar,
 		Token:     tokenValue,
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
