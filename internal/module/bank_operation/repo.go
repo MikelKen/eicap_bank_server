@@ -18,6 +18,11 @@ type Repo interface {
 	Create(ctx context.Context, operation *model.BankOperation, info *model.OperationInformation) error
 	FindByID(ctx context.Context, id uuid.UUID) (*model.BankOperation, error)
 	FindAll(ctx context.Context, filter BankOperationFilter) ([]model.BankOperation, int64, error)
+	// FindBySessionID devuelve las operaciones registradas durante una sesión de caja.
+	FindBySessionID(ctx context.Context, sessionID uuid.UUID, filter BankOperationFilter) ([]model.BankOperation, int64, error)
+	// FindAllByClientID devuelve las operaciones de las cuentas de un cliente.
+	FindAllByClientID(ctx context.Context, clientID uuid.UUID, filter BankOperationFilter) ([]model.BankOperation, int64, error)
+	FindAllByUserID(ctx context.Context, userID uuid.UUID, filter BankOperationFilter) ([]model.BankOperation, int64, error)
 	// SessionTotals devuelve la suma de ingresos y egresos registrados durante una sesión de caja.
 	SessionTotals(ctx context.Context, sessionID uuid.UUID) (income, expense decimal.Decimal, err error)
 	NextCode(ctx context.Context) (string, error)
@@ -83,12 +88,71 @@ func (r *repo) FindAll(ctx context.Context, filter BankOperationFilter) ([]model
 				db = db.Joins("JOIN type_operations ON type_operations.id = bank_operations.type_operation_id").
 					Where("type_operations.code = ?", filter.TypeOperationCode)
 			}
+			return orderByDate(db, filter)
+		},
+	)
+}
 
-			order := "desc"
-			if filter.Order == "asc" {
-				order = "asc"
+func orderByDate(db *gorm.DB, filter BankOperationFilter) *gorm.DB {
+	order := "desc"
+	if filter.Order == "asc" {
+		order = "asc"
+	}
+	return db.Order("bank_operations.date " + order)
+}
+
+func (r *repo) FindBySessionID(ctx context.Context, sessionID uuid.UUID, filter BankOperationFilter) ([]model.BankOperation, int64, error) {
+	return pagination.GormPaginate[model.BankOperation](
+		r.db.WithContext(ctx).Model(&model.BankOperation{}).
+			Preload("TypeOperation").Preload("Account").Preload("OperationInformation").
+			Where("cash_session_id = ?", sessionID),
+		filter.Params,
+		func(db *gorm.DB) *gorm.DB {
+			if filter.TypeOperationCode != "" {
+				db = db.Joins("JOIN type_operations ON type_operations.id = bank_operations.type_operation_id").
+					Where("type_operations.code = ?", filter.TypeOperationCode)
 			}
-			return db.Order("bank_operations.date " + order)
+			return orderByDate(db, filter)
+		},
+	)
+}
+
+func (r *repo) FindAllByClientID(ctx context.Context, clientID uuid.UUID, filter BankOperationFilter) ([]model.BankOperation, int64, error) {
+	return pagination.GormPaginate[model.BankOperation](
+		r.db.WithContext(ctx).Model(&model.BankOperation{}).
+			Preload("TypeOperation").Preload("Account").Preload("OperationInformation").
+			Joins("JOIN accounts ON accounts.id = bank_operations.account_id").
+			Where("accounts.client_id = ?", clientID),
+		filter.Params,
+		func(db *gorm.DB) *gorm.DB {
+			if filter.AccountID != "" {
+				db = db.Where("bank_operations.account_id = ?", filter.AccountID)
+			}
+			if filter.TypeOperationCode != "" {
+				db = db.Joins("JOIN type_operations ON type_operations.id = bank_operations.type_operation_id").
+					Where("type_operations.code = ?", filter.TypeOperationCode)
+			}
+			return orderByDate(db, filter)
+		},
+	)
+}
+
+func (r *repo) FindAllByUserID(ctx context.Context, userID uuid.UUID, filter BankOperationFilter) ([]model.BankOperation, int64, error) {
+	return pagination.GormPaginate[model.BankOperation](
+		r.db.WithContext(ctx).Model(&model.BankOperation{}).
+			Preload("TypeOperation").Preload("Account").Preload("OperationInformation").
+			Joins("JOIN cash_sessions ON cash_sessions.id = bank_operations.cash_session_id").
+			Where("cash_sessions.user_id = ?", userID),
+		filter.Params,
+		func(db *gorm.DB) *gorm.DB {
+			if filter.AccountID != "" {
+				db = db.Where("bank_operations.account_id = ?", filter.AccountID)
+			}
+			if filter.TypeOperationCode != "" {
+				db = db.Joins("JOIN type_operations ON type_operations.id = bank_operations.type_operation_id").
+					Where("type_operations.code = ?", filter.TypeOperationCode)
+			}
+			return orderByDate(db, filter)
 		},
 	)
 }

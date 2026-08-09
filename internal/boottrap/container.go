@@ -57,7 +57,7 @@ func NewContainer(db *gorm.DB, cfg *config.Config) *Container {
 	cashSessionRepo := cashsession.NewRepo(db)
 
 	bankOperationRepo := bankoperation.NewRepo(db)
-	bankOperationService := bankoperation.NewService(bankOperationRepo, accountRepo, typeOperationRepo, cashSessionRepo)
+	bankOperationService := bankoperation.NewService(bankOperationRepo, accountRepo, typeOperationRepo, cashSessionRepo, clientRepo)
 	bankOperationHandler := bankoperation.NewHandler(bankOperationService, cfg.JWTSecret)
 
 	cashSessionService := cashsession.NewService(cashSessionRepo, denominationRepo, bankOperationService)

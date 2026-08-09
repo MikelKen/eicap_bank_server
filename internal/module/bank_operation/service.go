@@ -8,6 +8,7 @@ import (
 	"github.com/Eicap/EICAP-BANK/server/internal/model"
 	"github.com/Eicap/EICAP-BANK/server/internal/module/account"
 	cashsession "github.com/Eicap/EICAP-BANK/server/internal/module/cash_session"
+	"github.com/Eicap/EICAP-BANK/server/internal/module/client"
 	typeoperation "github.com/Eicap/EICAP-BANK/server/internal/module/type_operation"
 	"github.com/Eicap/EICAP-BANK/server/internal/response"
 	"github.com/Eicap/EICAP-BANK/server/pkg/pagination"
@@ -28,6 +29,11 @@ type Service interface {
 	SessionTotals(ctx context.Context, sessionID uuid.UUID) (decimal.Decimal, decimal.Decimal, error)
 	FindByID(ctx context.Context, id uuid.UUID) (*response.BankOperation, error)
 	FindAll(ctx context.Context, filter BankOperationFilter) (pagination.Response[response.BankOperation], error)
+	FindAllByUserID(ctx context.Context, userID uuid.UUID, filter BankOperationFilter) (pagination.Response[response.BankOperation], error)
+	// FindByActiveSession devuelve todas las operaciones realizadas durante la sesión de caja activa del usuario.
+	FindByActiveSession(ctx context.Context, userID uuid.UUID, filter BankOperationFilter) (pagination.Response[response.BankOperation], error)
+	// FindAllByClientID devuelve todas las operaciones de las cuentas de un cliente.
+	FindAllByClientID(ctx context.Context, clientID uuid.UUID, filter BankOperationFilter) (pagination.Response[response.BankOperation], error)
 }
 
 type service struct {
@@ -35,14 +41,16 @@ type service struct {
 	accountRepo       account.Repo
 	typeOperationRepo typeoperation.Repo
 	cashSessionRepo   cashsession.Repo
+	clientRepo        client.Repo
 }
 
-func NewService(repo Repo, accountRepo account.Repo, typeOperationRepo typeoperation.Repo, cashSessionRepo cashsession.Repo) Service {
+func NewService(repo Repo, accountRepo account.Repo, typeOperationRepo typeoperation.Repo, cashSessionRepo cashsession.Repo, clientRepo client.Repo) Service {
 	return &service{
 		repo:              repo,
 		accountRepo:       accountRepo,
 		typeOperationRepo: typeOperationRepo,
 		cashSessionRepo:   cashSessionRepo,
+		clientRepo:        clientRepo,
 	}
 }
 
@@ -169,6 +177,14 @@ func (s *service) createOther(ctx context.Context, input *Create, typeOp *model.
 	return s.repo.Create(ctx, operation, nil)
 }
 
+func (s *service) FindAllByUserID(ctx context.Context, userID uuid.UUID, filter BankOperationFilter) (pagination.Response[response.BankOperation], error) {
+	list, total, err := s.repo.FindAllByUserID(ctx, userID, filter)
+	if err != nil {
+		return pagination.Response[response.BankOperation]{}, err
+	}
+	return pagination.NewResponse(response.BankOperationsToResponse(list), total, filter.Params), nil
+}
+
 func (s *service) CreateAccountOpening(ctx context.Context, accountID uuid.UUID) error {
 	typeOp, err := s.typeOperationRepo.FindByCode(CodeAccountOpen)
 	if err != nil {
@@ -239,6 +255,37 @@ func (s *service) FindByID(ctx context.Context, id uuid.UUID) (*response.BankOpe
 
 func (s *service) FindAll(ctx context.Context, filter BankOperationFilter) (pagination.Response[response.BankOperation], error) {
 	list, total, err := s.repo.FindAll(ctx, filter)
+	if err != nil {
+		return pagination.Response[response.BankOperation]{}, err
+	}
+	return pagination.NewResponse(response.BankOperationsToResponse(list), total, filter.Params), nil
+}
+
+// FindByActiveSession devuelve todas las operaciones registradas durante la sesión
+// de caja que el usuario tiene abierta en este momento.
+func (s *service) FindByActiveSession(ctx context.Context, userID uuid.UUID, filter BankOperationFilter) (pagination.Response[response.BankOperation], error) {
+	session, err := s.cashSessionRepo.FindOpenByUserID(ctx, userID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return pagination.Response[response.BankOperation]{}, response.NotFound("No tienes una sesión de caja abierta")
+		}
+		return pagination.Response[response.BankOperation]{}, err
+	}
+
+	list, total, err := s.repo.FindBySessionID(ctx, session.ID, filter)
+	if err != nil {
+		return pagination.Response[response.BankOperation]{}, err
+	}
+	return pagination.NewResponse(response.BankOperationsToResponse(list), total, filter.Params), nil
+}
+
+// FindAllByClientID devuelve todas las operaciones asociadas a las cuentas de un cliente.
+func (s *service) FindAllByClientID(ctx context.Context, clientID uuid.UUID, filter BankOperationFilter) (pagination.Response[response.BankOperation], error) {
+	if err := s.clientRepo.Exist(clientID); err != nil {
+		return pagination.Response[response.BankOperation]{}, response.NotFound("Cliente no encontrado")
+	}
+
+	list, total, err := s.repo.FindAllByClientID(ctx, clientID, filter)
 	if err != nil {
 		return pagination.Response[response.BankOperation]{}, err
 	}
