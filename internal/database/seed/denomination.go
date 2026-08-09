@@ -33,10 +33,9 @@ func seedDenomination(db *gorm.DB, typeDenom string, value int64, name string) {
 	}
 
 	denomination := model.Denomination{
-		Type:   typeDenom,
-		Value:  decimal.NewFromInt(value),
-		Name:   name,
-		Active: "true",
+		Type:  typeDenom,
+		Value: decimal.NewFromInt(value),
+		Name:  name,
 	}
 
 	if err := db.Create(&denomination).Error; err != nil {

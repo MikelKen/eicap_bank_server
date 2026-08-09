@@ -9,11 +9,10 @@ import (
 )
 
 type Denomination struct {
-	ID     uuid.UUID `gorm:"type:uuid;primaryKey;"`
-	Type   string
-	Value  decimal.Decimal //200, 100, 50, 20, 10, 5, 2, 1
-	Name   string
-	Active string
+	ID    uuid.UUID `gorm:"type:uuid;primaryKey;"`
+	Type  string
+	Value decimal.Decimal //200, 100, 50, 20, 10, 5, 2, 1
+	Name  string
 
 	CashCounts []CashCount `gorm:"foreignKey:DenominationID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 

@@ -15,7 +15,6 @@ var Denomination = struct {
 	Type       field.String
 	Value      field.Field[decimal.Decimal]
 	Name       field.String
-	Active     field.String
 	CashCounts field.Slice[model.CashCount]
 	CreatedAt  field.Time
 	UpdatedAt  field.Time
@@ -25,7 +24,6 @@ var Denomination = struct {
 	Type:       field.String{}.WithColumn("type"),
 	Value:      field.Field[decimal.Decimal]{}.WithColumn("value"),
 	Name:       field.String{}.WithColumn("name"),
-	Active:     field.String{}.WithColumn("active"),
 	CashCounts: field.Slice[model.CashCount]{}.WithName("CashCounts"),
 	CreatedAt:  field.Time{}.WithColumn("created_at"),
 	UpdatedAt:  field.Time{}.WithColumn("updated_at"),

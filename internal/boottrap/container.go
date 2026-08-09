@@ -5,7 +5,9 @@ import (
 	"github.com/Eicap/EICAP-BANK/server/internal/module/account"
 	"github.com/Eicap/EICAP-BANK/server/internal/module/auth"
 	"github.com/Eicap/EICAP-BANK/server/internal/module/client"
+	"github.com/Eicap/EICAP-BANK/server/internal/module/denomination"
 	typeaccount "github.com/Eicap/EICAP-BANK/server/internal/module/type_account"
+	typeoperation "github.com/Eicap/EICAP-BANK/server/internal/module/type_operation"
 	"github.com/Eicap/EICAP-BANK/server/internal/module/user"
 	"github.com/gofiber/fiber/v3"
 	"gorm.io/gorm"
@@ -35,9 +37,17 @@ func NewContainer(db *gorm.DB, cfg *config.Config) *Container {
 	typeAccountService := typeaccount.NewService(typeAccountRepo)
 	typeAccountHandler := typeaccount.NewHandler(typeAccountService, cfg.JWTSecret)
 
+	typeOperationRepo := typeoperation.NewRepo(db)
+	typeOperationService := typeoperation.NewService(typeOperationRepo)
+	typeOperationHandler := typeoperation.NewHandler(typeOperationService, cfg.JWTSecret)
+
 	accountRepo := account.NewRepo(db)
-	accountService := account.NewService(accountRepo, clientRepo, typeAccountRepo) // reutiliza los repos que ya creaste
+	accountService := account.NewService(accountRepo, clientRepo, typeAccountRepo)
 	accountHandler := account.NewHandler(accountService, cfg.JWTSecret)
+
+	denominationRepo := denomination.NewRepo(db)
+	denominationService := denomination.NewService(denominationRepo)
+	denominationHandler := denomination.NewHandler(denominationService, cfg.JWTSecret)
 
 	return &Container{
 		Handlers: []RouterRegister{
@@ -46,6 +56,8 @@ func NewContainer(db *gorm.DB, cfg *config.Config) *Container {
 			clientHandler,
 			typeAccountHandler,
 			accountHandler,
+			typeOperationHandler,
+			denominationHandler,
 		},
 	}
 }

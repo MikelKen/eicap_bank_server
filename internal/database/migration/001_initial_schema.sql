@@ -78,7 +78,6 @@ CREATE TABLE denominations (
     type VARCHAR(255),
     value NUMERIC,
     name VARCHAR(255),
-    active VARCHAR(255),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     deleted_at TIMESTAMPTZ

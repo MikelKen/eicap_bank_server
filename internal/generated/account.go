@@ -11,29 +11,31 @@ import (
 )
 
 var Account = struct {
-	ID            field.Field[uuid.UUID]
-	Number        field.String
-	Interest      field.Field[decimal.Decimal]
-	Balance       field.Field[decimal.Decimal]
-	Status        field.String
-	ClientID      field.Field[uuid.UUID]
-	Client        field.Struct[model.Client]
-	TypeAccountID field.Field[uuid.UUID]
-	TypeAccount   field.Struct[model.TypeAccount]
-	CreatedAt     field.Time
-	UpdatedAt     field.Time
-	DeletedAt     field.Field[gorm.DeletedAt]
+	ID             field.Field[uuid.UUID]
+	Number         field.String
+	Interest       field.Field[decimal.Decimal]
+	Balance        field.Field[decimal.Decimal]
+	Status         field.String
+	ClientID       field.Field[uuid.UUID]
+	Client         field.Struct[model.Client]
+	TypeAccountID  field.Field[uuid.UUID]
+	TypeAccount    field.Struct[model.TypeAccount]
+	BankOperations field.Slice[model.BankOperation]
+	CreatedAt      field.Time
+	UpdatedAt      field.Time
+	DeletedAt      field.Field[gorm.DeletedAt]
 }{
-	ID:            field.Field[uuid.UUID]{}.WithColumn("id"),
-	Number:        field.String{}.WithColumn("number"),
-	Interest:      field.Field[decimal.Decimal]{}.WithColumn("interest"),
-	Balance:       field.Field[decimal.Decimal]{}.WithColumn("balance"),
-	Status:        field.String{}.WithColumn("status"),
-	ClientID:      field.Field[uuid.UUID]{}.WithColumn("client_id"),
-	Client:        field.Struct[model.Client]{}.WithName("Client"),
-	TypeAccountID: field.Field[uuid.UUID]{}.WithColumn("type_account_id"),
-	TypeAccount:   field.Struct[model.TypeAccount]{}.WithName("TypeAccount"),
-	CreatedAt:     field.Time{}.WithColumn("created_at"),
-	UpdatedAt:     field.Time{}.WithColumn("updated_at"),
-	DeletedAt:     field.Field[gorm.DeletedAt]{}.WithColumn("deleted_at"),
+	ID:             field.Field[uuid.UUID]{}.WithColumn("id"),
+	Number:         field.String{}.WithColumn("number"),
+	Interest:       field.Field[decimal.Decimal]{}.WithColumn("interest"),
+	Balance:        field.Field[decimal.Decimal]{}.WithColumn("balance"),
+	Status:         field.String{}.WithColumn("status"),
+	ClientID:       field.Field[uuid.UUID]{}.WithColumn("client_id"),
+	Client:         field.Struct[model.Client]{}.WithName("Client"),
+	TypeAccountID:  field.Field[uuid.UUID]{}.WithColumn("type_account_id"),
+	TypeAccount:    field.Struct[model.TypeAccount]{}.WithName("TypeAccount"),
+	BankOperations: field.Slice[model.BankOperation]{}.WithName("BankOperations"),
+	CreatedAt:      field.Time{}.WithColumn("created_at"),
+	UpdatedAt:      field.Time{}.WithColumn("updated_at"),
+	DeletedAt:      field.Field[gorm.DeletedAt]{}.WithColumn("deleted_at"),
 }
