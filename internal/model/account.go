@@ -21,6 +21,8 @@ type Account struct {
 	TypeAccountID uuid.UUID   `gorm:"type:uuid;"`
 	TypeAccount   TypeAccount `gorm:"foreignKey:TypeAccountID;references:ID"`
 
+	BankOperations []BankOperation `gorm:"foreignKey:AccountID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`

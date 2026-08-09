@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"github.com/Eicap/EICAP-BANK/server/internal/config"
+	"github.com/Eicap/EICAP-BANK/server/internal/module/account"
 	"github.com/Eicap/EICAP-BANK/server/internal/module/auth"
 	"github.com/Eicap/EICAP-BANK/server/internal/module/client"
 	typeaccount "github.com/Eicap/EICAP-BANK/server/internal/module/type_account"
@@ -34,12 +35,17 @@ func NewContainer(db *gorm.DB, cfg *config.Config) *Container {
 	typeAccountService := typeaccount.NewService(typeAccountRepo)
 	typeAccountHandler := typeaccount.NewHandler(typeAccountService, cfg.JWTSecret)
 
+	accountRepo := account.NewRepo(db)
+	accountService := account.NewService(accountRepo, clientRepo, typeAccountRepo) // reutiliza los repos que ya creaste
+	accountHandler := account.NewHandler(accountService, cfg.JWTSecret)
+
 	return &Container{
 		Handlers: []RouterRegister{
 			userHandler,
 			authHandler,
 			clientHandler,
 			typeAccountHandler,
+			accountHandler,
 		},
 	}
 }
