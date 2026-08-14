@@ -12,6 +12,7 @@ type AccountFilter struct {
 	Status        string `form:"status" json:"status" query:"status"`
 	ClientID      string `form:"client_id" json:"client_id" query:"client_id"`
 	TypeAccountID string `form:"type_account_id" json:"type_account_id" query:"type_account_id"`
+	Search        string `form:"search" json:"search" query:"search"`
 }
 
 func (f *AccountFilter) SetDefaults() {

@@ -124,6 +124,9 @@ func applyAccountFilters(db *gorm.DB, filter AccountFilter) *gorm.DB {
 	if filter.TypeAccountID != "" {
 		db = db.Where("type_account_id = ?", filter.TypeAccountID)
 	}
+	if filter.Search != "" {
+		db = db.Where("number ILIKE ?", "%"+filter.Search+"%")
+	}
 	return db
 }
 
