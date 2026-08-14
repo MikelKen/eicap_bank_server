@@ -3,6 +3,7 @@ package bankoperation
 import (
 	"context"
 	"errors"
+	"log"
 	"time"
 
 	"github.com/Eicap/EICAP-BANK/server/internal/model"
@@ -58,6 +59,7 @@ func NewService(repo Repo, accountRepo account.Repo, typeOperationRepo typeopera
 // afectan el balance de la cuenta y registran una OperationInformation; el resto
 // de operaciones (APC, APCA, CICA...) se registran sin información adicional.
 func (s *service) Create(ctx context.Context, userID uuid.UUID, input *Create) error {
+	log.Println("Datos de la transaccion: ", *input)
 	if input.Amount.IsNegative() {
 		return response.BadRequest("El monto no puede ser negativo")
 	}
