@@ -15,6 +15,7 @@ type CashSession struct {
 	ClosingAmount    *string     `json:"closing_amount,omitempty"`
 	ExpectedAmount   *string     `json:"expected_amount,omitempty"`
 	DifferenceAmount *string     `json:"difference_amount,omitempty"`
+	OperationCode    string      `json:"operation_code,omitempty"`
 	UserID           string      `json:"user_id"`
 	UserName         string      `json:"user_name,omitempty"`
 	Counts           []CashCount `json:"counts,omitempty"`
@@ -65,6 +66,14 @@ func CashSessionToResponse(s *model.CashSession) *CashSession {
 
 	if len(s.CashCounts) > 0 {
 		resp.Counts = CashCountsToResponse(s.CashCounts)
+	}
+
+	// Código de la operación bancaria que dejó constancia del cierre de caja (CICA).
+	for _, op := range s.BankOperations {
+		if op.TypeOperation.Code == "CICA" {
+			resp.OperationCode = op.Code
+			break
+		}
 	}
 
 	return resp

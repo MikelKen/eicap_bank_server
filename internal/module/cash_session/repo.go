@@ -97,7 +97,10 @@ func (r *repo) FindOpenByUserID(ctx context.Context, userID uuid.UUID) (*model.C
 func (r *repo) FindAll(ctx context.Context, filter CashSessionFilter) ([]model.CashSession, int64, error) {
 	return pagination.GormPaginate[model.CashSession](
 		r.db.WithContext(ctx).Model(&model.CashSession{}).
-			Preload("User"),
+			Preload("User").
+			Preload("CashCounts.Denomination").
+			Preload("BankOperations", "type_operation_id IN (SELECT id FROM type_operations WHERE code = ?)", "CICA").
+			Preload("BankOperations.TypeOperation"),
 		filter.Params,
 		func(db *gorm.DB) *gorm.DB {
 			if filter.State != "" {
