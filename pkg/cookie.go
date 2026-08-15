@@ -18,7 +18,7 @@ func DefaultCookieConfig(isProduction bool) CookieConfig {
 	return CookieConfig{
 		HttpOnly: true,
 		Secure:   isProduction,
-		SameSite: fiber.CookieSameSiteLaxMode,
+		SameSite: fiber.CookieSameSiteNoneMode,
 		Path:     "/",
 	}
 }
@@ -42,8 +42,8 @@ func ClearAuthCookie(isProduction bool) *fiber.Cookie {
 		Value:    "",
 		HTTPOnly: true,
 		Secure:   isProduction,
-		SameSite: fiber.CookieSameSiteLaxMode,
+		SameSite: fiber.CookieSameSiteNoneMode,
 		Path:     "/",
-		MaxAge:   -1, // Set MaxAge to -1 to delete the cookie
+		MaxAge:   -1,
 	}
 }

@@ -26,7 +26,6 @@ func Load() *Config {
 	if err != nil {
 		log.Println(`.env file not found`)
 	}
-	log.Println("URL: ", os.Getenv("ALLOW_ORIGINS"))
 
 	return &Config{
 		AppPort:      os.Getenv("APP_PORT"),
