@@ -37,3 +37,10 @@ func (c *Create) ToModel(hashedPassword string) *model.User {
 		Role:     c.Role,
 	}
 }
+
+type Update struct {
+	Name     string          `json:"name" validate:"required"`
+	Email    *string         `json:"email" validate:"omitempty,email"`
+	Password *string         `json:"password" validate:"omitempty,min=6"`
+	Role     enum.Permission `json:"role" validate:"required,oneof=admin student"`
+}

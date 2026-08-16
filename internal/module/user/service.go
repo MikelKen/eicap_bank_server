@@ -11,6 +11,8 @@ import (
 
 type Service interface {
 	Create(ctx context.Context, input *Create) error
+	Update(ctx context.Context, id uuid.UUID, input *Update) error
+	Delete(ctx context.Context, id uuid.UUID) error
 	FindByID(ctx context.Context, userID uuid.UUID) (*response.User, error)
 	FindAll(ctx context.Context, filter UserFilter) (pagination.Response[response.User], error)
 }
@@ -41,6 +43,52 @@ func (s *service) Create(ctx context.Context, input *Create) error {
 		return err
 	}
 	return nil
+}
+
+func (s *service) Update(ctx context.Context, id uuid.UUID, input *Update) error {
+	if err := s.repo.Exist(id); err != nil {
+		return err
+	}
+
+	user, err := s.repo.FindByID(id)
+	if err != nil {
+		return response.NotFound("Usuario no encontrado")
+	}
+
+	if input.Email != nil && *input.Email != "" {
+		if existing, err := s.repo.GetByEmail(*input.Email); err == nil && existing.ID != id {
+			return response.Conflict("El correo ya está en uso")
+		}
+	}
+
+	user.Name = input.Name
+	user.Role = input.Role
+
+	var email *string
+	if input.Email != nil && *input.Email != "" {
+		email = input.Email
+	}
+	user.Email = email
+
+	if input.Password != nil && *input.Password != "" {
+		hashedPassword, err := pkg.Hash(*input.Password)
+		if err != nil {
+			return response.InternalServerError("Error al procesar la contraseña")
+		}
+		user.Password = hashedPassword
+	}
+
+	if err := s.repo.Update(user); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *service) Delete(ctx context.Context, id uuid.UUID) error {
+	if err := s.repo.Exist(id); err != nil {
+		return err
+	}
+	return s.repo.Delete(id)
 }
 
 func (s *service) FindByID(ctx context.Context, userID uuid.UUID) (*response.User, error) {
