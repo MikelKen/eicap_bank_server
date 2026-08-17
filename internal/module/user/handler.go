@@ -12,6 +12,8 @@ import (
 type Handler interface {
 	RegisterRoutes(v1 fiber.Router)
 	Create(ctx fiber.Ctx) error
+	Update(ctx fiber.Ctx) error
+	Delete(ctx fiber.Ctx) error
 	Me(ctx fiber.Ctx) error
 	FindByID(ctx fiber.Ctx) error
 	FindAll(ctx fiber.Ctx) error
@@ -47,6 +49,16 @@ func (h *handler) RegisterRoutes(v1 fiber.Router) {
 	user.Get("/",
 		middleware.RequirePermission(enum.Admin),
 		h.FindAll,
+	)
+
+	user.Put("/:id",
+		middleware.RequirePermission(enum.Admin),
+		h.Update,
+	)
+
+	user.Delete("/:id",
+		middleware.RequirePermission(enum.Admin),
+		h.Delete,
 	)
 }
 
@@ -103,4 +115,38 @@ func (h *handler) FindAll(c fiber.Ctx) error {
 		return err
 	}
 	return c.JSON(response.OK("Usuarios encontrados exitosamente", result))
+}
+
+func (h *handler) Update(c fiber.Ctx) error {
+	id, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return response.BadRequest("ID inválido")
+	}
+
+	var input Update
+	if err := c.Bind().Body(&input); err != nil {
+		return err
+	}
+
+	if err := h.service.Update(c.Context(), id, &input); err != nil {
+		return err
+	}
+	return c.JSON(response.OK("Usuario actualizado exitosamente", nil))
+}
+
+func (h *handler) Delete(c fiber.Ctx) error {
+	id, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return response.BadRequest("ID inválido")
+	}
+
+	claims := middleware.User(c)
+	if claims != nil && claims.UserID == id {
+		return response.BadRequest("No puedes eliminar tu propio usuario")
+	}
+
+	if err := h.service.Delete(c.Context(), id); err != nil {
+		return err
+	}
+	return c.JSON(response.OK("Usuario eliminado exitosamente", nil))
 }
