@@ -37,5 +37,5 @@ func (h *handler) Summary(c fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	return c.JSON(response.OK("Resumen del panel encontrado exitosamente", result))
+	return c.JSON(response.OK("Resumen del panel encontrado exitosamente.", result))
 }
