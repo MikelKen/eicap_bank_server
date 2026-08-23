@@ -8,6 +8,7 @@ import (
 	cashcount "github.com/Eicap/EICAP-BANK/server/internal/module/cash_count"
 	cashsession "github.com/Eicap/EICAP-BANK/server/internal/module/cash_session"
 	"github.com/Eicap/EICAP-BANK/server/internal/module/client"
+	"github.com/Eicap/EICAP-BANK/server/internal/module/dashboard"
 	"github.com/Eicap/EICAP-BANK/server/internal/module/denomination"
 	typeaccount "github.com/Eicap/EICAP-BANK/server/internal/module/type_account"
 	typeoperation "github.com/Eicap/EICAP-BANK/server/internal/module/type_operation"
@@ -63,6 +64,10 @@ func NewContainer(db *gorm.DB, cfg *config.Config) *Container {
 	cashSessionService := cashsession.NewService(cashSessionRepo, denominationRepo, bankOperationService)
 	cashSessionHandler := cashsession.NewHandler(cashSessionService, cfg.JWTSecret)
 
+	dashboardRepo := dashboard.NewRepo(db)
+	dashboardService := dashboard.NewService(dashboardRepo)
+	dashboardHandler := dashboard.NewHandler(dashboardService, cfg.JWTSecret)
+
 	accountService := account.NewService(accountRepo, clientRepo, typeAccountRepo, bankOperationService)
 	accountHandler := account.NewHandler(accountService, cfg.JWTSecret)
 
@@ -78,6 +83,7 @@ func NewContainer(db *gorm.DB, cfg *config.Config) *Container {
 			cashCountHandler,
 			cashSessionHandler,
 			bankOperationHandler,
+			dashboardHandler,
 		},
 	}
 }
