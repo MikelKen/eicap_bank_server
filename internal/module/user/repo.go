@@ -16,6 +16,7 @@ type Repo interface {
 	Create(input *model.User) error
 	Update(input *model.User) error
 	GetByEmail(email string) (*model.User, error)
+	GetByUserName(username string) (*model.User, error)
 	FindByID(id uuid.UUID) (*model.User, error)
 	FindAll(ctx context.Context, filter UserFilter) ([]model.User, int64, error)
 	Exist(id uuid.UUID) error
@@ -41,6 +42,14 @@ func (r *repo) Update(input *model.User) error {
 func (r *repo) GetByEmail(email string) (*model.User, error) {
 	var user model.User
 	if err := r.db.Where(generated.User.Email.Eq(email)).First(&user).Error; err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (r *repo) GetByUserName(username string) (*model.User, error) {
+	var user model.User
+	if err := r.db.Where(generated.User.UserName.Eq(username)).First(&user).Error; err != nil {
 		return nil, err
 	}
 	return &user, nil

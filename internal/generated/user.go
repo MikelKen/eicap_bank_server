@@ -13,6 +13,7 @@ import (
 var User = struct {
 	ID           field.Field[uuid.UUID]
 	Name         field.String
+	UserName     field.String
 	Email        field.String
 	Password     field.String
 	Avatar       field.String
@@ -25,6 +26,7 @@ var User = struct {
 }{
 	ID:           field.Field[uuid.UUID]{}.WithColumn("id"),
 	Name:         field.String{}.WithColumn("name"),
+	UserName:     field.String{}.WithColumn("user_name"),
 	Email:        field.String{}.WithColumn("email"),
 	Password:     field.String{}.WithColumn("password"),
 	Avatar:       field.String{}.WithColumn("avatar"),

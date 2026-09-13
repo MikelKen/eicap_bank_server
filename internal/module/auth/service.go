@@ -17,6 +17,7 @@ type Service interface {
 
 type userRepo interface {
 	GetByEmail(email string) (*model.User, error)
+	GetByUserName(username string) (*model.User, error)
 }
 
 type service struct {
@@ -29,7 +30,17 @@ func NewService(userRepo userRepo, cfg *config.Config) Service {
 }
 
 func (s *service) Login(input *Login) (string, time.Duration, *response.User, error) {
-	user, err := s.userRepo.GetByEmail(input.Email)
+	var user *model.User
+	var err error
+
+	if input.Email != nil {
+		user, err = s.userRepo.GetByEmail(*input.Email)
+	} else if input.UserName != nil {
+		user, err = s.userRepo.GetByUserName(*input.UserName)
+	} else {
+		return "", 0, nil, response.BadRequest("Email o username son requeridos")
+	}
+
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return "", 0, nil, response.Unauthorized("Credenciales inválidas")
