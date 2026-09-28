@@ -20,7 +20,7 @@ CREATE INDEX idx_users_email ON users(email);
 CREATE TABLE clients (
     id UUID PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    ci VARCHAR(255),
+    ci VARCHAR(255) NOT NULL UNIQUE,
     sex VARCHAR(255),
     birth_date VARCHAR(255),
     user_id UUID NOT NULL REFERENCES users(id),
@@ -34,7 +34,7 @@ CREATE UNIQUE INDEX idx_clients_user_id_ci ON clients(user_id, ci) WHERE deleted
 
 CREATE TABLE type_accounts (
     id UUID PRIMARY KEY,
-    name VARCHAR(255),
+    name VARCHAR(255) NOT NULL UNIQUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     deleted_at TIMESTAMPTZ
@@ -45,7 +45,7 @@ CREATE INDEX idx_type_accounts_name ON type_accounts(name);
 
 CREATE TABLE accounts (
     id UUID PRIMARY KEY,
-    number VARCHAR(255),
+    number VARCHAR(255) NOT NULL UNIQUE,
     interest NUMERIC,
     balance NUMERIC,
     status VARCHAR(255),
@@ -63,8 +63,9 @@ CREATE INDEX idx_accounts_type_account_id ON accounts(type_account_id);
 
 CREATE TABLE type_operations (
     id UUID PRIMARY KEY,
-    code VARCHAR(255),
-    name VARCHAR(255),
+    code VARCHAR(255) NOT NULL UNIQUE,
+    name VARCHAR(255) NOT NULL UNIQUE,
+    cash_flow_type VARCHAR(255),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     deleted_at TIMESTAMPTZ
@@ -76,8 +77,8 @@ CREATE INDEX idx_type_operations_name ON type_operations(name);
 
 CREATE TABLE denominations (
     id UUID PRIMARY KEY,
-    type VARCHAR(255),
-    value NUMERIC,
+    type VARCHAR(255) NOT NULL,
+    value NUMERIC NOT NULL UNIQUE,
     name VARCHAR(255),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -109,7 +110,7 @@ CREATE INDEX idx_cash_sessions_closing_date ON cash_sessions(closing_date);
 
 CREATE TABLE bank_operations (
     id UUID PRIMARY KEY,
-    code VARCHAR(255),
+    code VARCHAR(255) NOT NULL UNIQUE,
     date TIMESTAMPTZ,
     previous_balance NUMERIC,
     import NUMERIC,

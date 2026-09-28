@@ -7,9 +7,10 @@ import (
 )
 
 type TypeOperation struct {
-	ID   string `json:"id"`
-	Code string `json:"code"`
-	Name string `json:"name"`
+	ID           string `json:"id"`
+	Code         string `json:"code"`
+	Name         string `json:"name"`
+	CashFlowType string `json:"cash_flow_type,omitempty"`
 
 	CreatedAt time.Time  `json:"created_at"`
 	UpdatedAt time.Time  `json:"updated_at"`
@@ -33,11 +34,12 @@ func TypeOperationToResponse(typeOperation *model.TypeOperation) *TypeOperation 
 	}
 
 	return &TypeOperation{
-		ID:        typeOperation.ID.String(),
-		Code:      typeOperation.Code,
-		Name:      typeOperation.Name,
-		CreatedAt: typeOperation.CreatedAt,
-		UpdatedAt: typeOperation.UpdatedAt,
-		DeletedAt: deletedAt,
+		ID:           typeOperation.ID.String(),
+		Code:         typeOperation.Code,
+		Name:         typeOperation.Name,
+		CashFlowType: typeOperation.CashFlowType,
+		CreatedAt:    typeOperation.CreatedAt,
+		UpdatedAt:    typeOperation.UpdatedAt,
+		DeletedAt:    deletedAt,
 	}
 }

@@ -9,14 +9,22 @@ import (
 )
 
 func SeedTypeOperations(db *gorm.DB) {
-	seedTypeOperation(db, "ING", "Ingreso")
-	seedTypeOperation(db, "EGR", "Egreso")
-	seedTypeOperation(db, "APC", "Apertura de Cuenta")
-	seedTypeOperation(db, "APCA", "Apertura de Caja")
-	seedTypeOperation(db, "CICA", "Cierre de Caja")
+	// Conserva las operaciones históricas cambiando solo su catálogo asociado.
+	db.Model(&model.TypeOperation{}).Where("code = ?", "ING").Updates(map[string]any{
+		"code": "DEPO", "name": "Depósito", "cash_flow_type": "ING",
+	})
+	db.Model(&model.TypeOperation{}).Where("code = ?", "EGR").Updates(map[string]any{
+		"code": "RETI", "name": "Retiro", "cash_flow_type": "EGR",
+	})
+
+	seedTypeOperation(db, "DEPO", "Depósito", "ING")
+	seedTypeOperation(db, "RETI", "Retiro", "EGR")
+	seedTypeOperation(db, "APC", "Apertura de Cuenta", "")
+	seedTypeOperation(db, "APCA", "Apertura de Caja", "")
+	seedTypeOperation(db, "CICA", "Cierre de Caja", "")
 }
 
-func seedTypeOperation(db *gorm.DB, code, name string) {
+func seedTypeOperation(db *gorm.DB, code, name, cashFlowType string) {
 	var existing model.TypeOperation
 	err := db.Where("code = ?", code).Take(&existing).Error
 	if err == nil {
@@ -29,8 +37,9 @@ func seedTypeOperation(db *gorm.DB, code, name string) {
 	}
 
 	typeOperation := model.TypeOperation{
-		Code: code,
-		Name: name,
+		Code:         code,
+		Name:         name,
+		CashFlowType: cashFlowType,
 	}
 
 	if err := db.Create(&typeOperation).Error; err != nil {

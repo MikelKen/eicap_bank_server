@@ -9,7 +9,7 @@ import (
 
 type TypeAccount struct {
 	ID   uuid.UUID `gorm:"type:uuid;primaryKey;"`
-	Name string
+	Name string    `gorm:"uniqueIndex:name"`
 
 	Accounts []Account `gorm:"foreignKey:TypeAccountID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 

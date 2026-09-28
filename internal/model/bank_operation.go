@@ -10,7 +10,7 @@ import (
 
 type BankOperation struct {
 	ID              uuid.UUID `gorm:"type:uuid;primaryKey;"`
-	Code            string
+	Code            string    `gorm:"uniqueIndex"`
 	Date            time.Time
 	PreviousBalance decimal.Decimal
 	Import          decimal.Decimal

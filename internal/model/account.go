@@ -10,7 +10,7 @@ import (
 
 type Account struct {
 	ID       uuid.UUID `gorm:"type:uuid;primaryKey;"`
-	Number   string
+	Number   string    `gorm:"uniqueIndex:number"`
 	Interest decimal.Decimal
 	Balance  decimal.Decimal
 	Status   string

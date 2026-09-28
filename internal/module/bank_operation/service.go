@@ -3,7 +3,6 @@ package bankoperation
 import (
 	"context"
 	"errors"
-	"log"
 	"time"
 
 	"github.com/Eicap/EICAP-BANK/server/internal/model"
@@ -55,11 +54,7 @@ func NewService(repo Repo, accountRepo account.Repo, typeOperationRepo typeopera
 	}
 }
 
-// Create registra una operación bancaria. Solo las operaciones de tipo ING/EGR
-// afectan el balance de la cuenta y registran una OperationInformation; el resto
-// de operaciones (APC, APCA, CICA...) se registran sin información adicional.
 func (s *service) Create(ctx context.Context, userID uuid.UUID, input *Create) error {
-	log.Println("Datos de la transaccion: ", *input)
 	if input.Amount.IsNegative() {
 		return response.BadRequest("El monto no puede ser negativo")
 	}
@@ -69,15 +64,13 @@ func (s *service) Create(ctx context.Context, userID uuid.UUID, input *Create) e
 		return response.NotFound("Tipo de operación no encontrado")
 	}
 
-	switch input.TypeOperationCode {
-	case CodeIncome, CodeExpense:
-		return s.createIncomeOrExpense(ctx, userID, input, typeOp)
-	default:
-		return s.createOther(ctx, input, typeOp)
+	if typeOp.CashFlowType == typeoperation.CashFlowIncome || typeOp.CashFlowType == typeoperation.CashFlowExpense {
+		return s.createCashFlow(ctx, userID, input, typeOp)
 	}
+	return s.createOther(ctx, input, typeOp)
 }
 
-func (s *service) createIncomeOrExpense(ctx context.Context, userID uuid.UUID, input *Create, typeOp *model.TypeOperation) error {
+func (s *service) createCashFlow(ctx context.Context, userID uuid.UUID, input *Create, typeOp *model.TypeOperation) error {
 	if input.Amount.LessThanOrEqual(decimal.Zero) {
 		return response.BadRequest("El monto debe ser mayor a cero")
 	}
@@ -109,10 +102,10 @@ func (s *service) createIncomeOrExpense(ctx context.Context, userID uuid.UUID, i
 	previousBalance := acc.Balance
 	var endBalance decimal.Decimal
 
-	switch input.TypeOperationCode {
-	case CodeIncome:
+	switch typeOp.CashFlowType {
+	case typeoperation.CashFlowIncome:
 		endBalance = previousBalance.Add(input.Amount)
-	case CodeExpense:
+	case typeoperation.CashFlowExpense:
 		if input.Amount.GreaterThan(previousBalance) {
 			return response.BadRequest("Fondos insuficientes en la cuenta")
 		}
@@ -175,7 +168,7 @@ func (s *service) createOther(ctx context.Context, input *Create, typeOp *model.
 		AccountID:       input.AccountID,
 	}
 
-	// Las operaciones que no son ING/EGR no registran OperationInformation.
+	// Las operaciones sin flujo no registran información adicional.
 	return s.repo.Create(ctx, operation, nil)
 }
 

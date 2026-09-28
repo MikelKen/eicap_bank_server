@@ -8,9 +8,10 @@ import (
 )
 
 type TypeOperation struct {
-	ID   uuid.UUID `gorm:"type:uuid;primaryKey;"`
-	Code string
-	Name string
+	ID           uuid.UUID `gorm:"type:uuid;primaryKey;"`
+	Code         string    `gorm:"uniqueIndex"`
+	Name         string    `gorm:"uniqueIndex"`
+	CashFlowType string
 
 	BankOperations []BankOperation `gorm:"foreignKey:TypeOperationID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 
