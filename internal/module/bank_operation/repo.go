@@ -6,6 +6,7 @@ import (
 
 	"github.com/Eicap/EICAP-BANK/server/internal/generated"
 	"github.com/Eicap/EICAP-BANK/server/internal/model"
+	typeoperation "github.com/Eicap/EICAP-BANK/server/internal/module/type_operation"
 	"github.com/Eicap/EICAP-BANK/server/pkg/pagination"
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
@@ -13,8 +14,7 @@ import (
 )
 
 type Repo interface {
-	// Create registra la operación en una transacción: crea la operación, si `info` no es nil
-	// crea su OperationInformation (solo ING/EGR), y si la operación tiene cuenta actualiza su balance.
+	// Create registra la operación y, si tiene cuenta, actualiza su saldo en la misma transacción.
 	Create(ctx context.Context, operation *model.BankOperation, info *model.OperationInformation) error
 	FindByID(ctx context.Context, id uuid.UUID) (*model.BankOperation, error)
 	FindAll(ctx context.Context, filter BankOperationFilter) ([]model.BankOperation, int64, error)
@@ -162,27 +162,27 @@ func (r *repo) SessionTotals(ctx context.Context, sessionID uuid.UUID) (income, 
 	expense = decimal.Zero
 
 	type totalRow struct {
-		Code  string
+		Flow  string
 		Total decimal.Decimal
 	}
 
 	var rows []totalRow
 	if err := r.db.WithContext(ctx).
 		Model(&model.BankOperation{}).
-		Select("type_operations.code AS code, COALESCE(SUM(bank_operations.import), 0) AS total").
+		Select("type_operations.cash_flow_type AS flow, COALESCE(SUM(bank_operations.import), 0) AS total").
 		Joins("JOIN type_operations ON type_operations.id = bank_operations.type_operation_id").
 		Where("bank_operations.cash_session_id = ?", sessionID).
-		Where("type_operations.code IN ?", []string{CodeIncome, CodeExpense}).
-		Group("type_operations.code").
+		Where("type_operations.cash_flow_type IN ?", []string{typeoperation.CashFlowIncome, typeoperation.CashFlowExpense}).
+		Group("type_operations.cash_flow_type").
 		Scan(&rows).Error; err != nil {
 		return decimal.Zero, decimal.Zero, err
 	}
 
 	for _, row := range rows {
-		switch row.Code {
-		case CodeIncome:
+		switch row.Flow {
+		case typeoperation.CashFlowIncome:
 			income = row.Total
-		case CodeExpense:
+		case typeoperation.CashFlowExpense:
 			expense = row.Total
 		}
 	}

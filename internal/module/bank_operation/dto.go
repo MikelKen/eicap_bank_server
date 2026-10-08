@@ -7,8 +7,6 @@ import (
 )
 
 const (
-	CodeIncome      = "ING"  // Ingreso
-	CodeExpense     = "EGR"  // Egreso
 	CodeAccountOpen = "APC"  // Apertura de Cuenta
 	CodeCashOpen    = "APCA" // Apertura de Caja
 	CodeCashClose   = "CICA" // Cierre de Caja
@@ -24,8 +22,7 @@ func (f *BankOperationFilter) SetDefaults() {
 	f.Params.SetDefaults()
 }
 
-// OperationInformationInput solo se exige cuando TypeOperationCode es ING o EGR.
-// Para el resto de operaciones (APC, APCA, CICA...) no se registra información.
+// OperationInformationInput se exige para las operaciones que mueven efectivo.
 type OperationInformationInput struct {
 	Origin      string `json:"origin"`
 	Reason      string `json:"reason"`
@@ -34,7 +31,7 @@ type OperationInformationInput struct {
 }
 
 type Create struct {
-	TypeOperationCode string                     `json:"type_operation_code" validate:"required,oneof=ING EGR APC APCA CICA"`
+	TypeOperationCode string                     `json:"type_operation_code" validate:"required"`
 	AccountID         *uuid.UUID                 `json:"account_id"`
 	Amount            decimal.Decimal            `json:"amount"`
 	Info              *OperationInformationInput `json:"info"`

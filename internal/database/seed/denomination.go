@@ -10,19 +10,26 @@ import (
 )
 
 func SeedDenominations(db *gorm.DB) {
-	seedDenomination(db, "bill", 200, "Billete de 200")
-	seedDenomination(db, "bill", 100, "Billete de 100")
-	seedDenomination(db, "bill", 50, "Billete de 50")
-	seedDenomination(db, "bill", 20, "Billete de 20")
-	seedDenomination(db, "bill", 10, "Billete de 10")
-	seedDenomination(db, "coin", 5, "Moneda de 5")
-	seedDenomination(db, "coin", 2, "Moneda de 2")
-	seedDenomination(db, "coin", 1, "Moneda de 1")
+	seedDenomination(db, "bill", "200", "Billete de 200")
+	seedDenomination(db, "bill", "100", "Billete de 100")
+	seedDenomination(db, "bill", "50", "Billete de 50")
+	seedDenomination(db, "bill", "20", "Billete de 20")
+	seedDenomination(db, "bill", "10", "Billete de 10")
+	seedDenomination(db, "coin", "5", "Moneda de 5")
+	seedDenomination(db, "coin", "2", "Moneda de 2")
+	seedDenomination(db, "coin", "1", "Moneda de 1")
+	seedDenomination(db, "coin", "0.50", "Moneda de 0.50")
 }
 
-func seedDenomination(db *gorm.DB, typeDenom string, value int64, name string) {
+func seedDenomination(db *gorm.DB, typeDenom, valueStr, name string) {
+	value, err := decimal.NewFromString(valueStr)
+	if err != nil {
+		log.Fatalf("Invalid denomination value %q: %v", valueStr, err)
+	}
+
 	var existing model.Denomination
-	err := db.Where("type = ? AND value = ?", typeDenom, value).Take(&existing).Error
+	err = db.Where("type = ? AND value = ?", typeDenom, value).Take(&existing).Error
+
 	if err == nil {
 		log.Printf("Skipping denomination %s %s: already exists", typeDenom, name)
 		return
@@ -34,7 +41,7 @@ func seedDenomination(db *gorm.DB, typeDenom string, value int64, name string) {
 
 	denomination := model.Denomination{
 		Type:  typeDenom,
-		Value: decimal.NewFromInt(value),
+		Value: value,
 		Name:  name,
 	}
 

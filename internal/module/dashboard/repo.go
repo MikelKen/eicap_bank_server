@@ -80,9 +80,9 @@ func operationScope(db *gorm.DB, userID *uuid.UUID) *gorm.DB {
 				Select("id").Where("user_id = ?", *userID),
 			db.Session(&gorm.Session{NewDB: true}).Model(&model.Account{}).
 				Select("id").Where("client_id IN (?)",
-					db.Session(&gorm.Session{NewDB: true}).Model(&model.Client{}).
-						Select("id").Where("user_id = ?", *userID),
-				),
+				db.Session(&gorm.Session{NewDB: true}).Model(&model.Client{}).
+					Select("id").Where("user_id = ?", *userID),
+			),
 		)
 	}
 	return db
@@ -97,8 +97,8 @@ func (r *repo) OperationsTotals(ctx context.Context, userID *uuid.UUID) (int64, 
 
 	err := operationScope(r.db.WithContext(ctx).Session(&gorm.Session{}), userID).
 		Select(`COUNT(*) AS total,
-			COALESCE(SUM(bank_operations.import) FILTER (WHERE type_operation.code = 'ING'), 0) AS income,
-			COALESCE(SUM(bank_operations.import) FILTER (WHERE type_operation.code = 'EGR'), 0) AS expense`).
+			COALESCE(SUM(bank_operations.import) FILTER (WHERE type_operation.cash_flow_type = 'ING'), 0) AS income,
+			COALESCE(SUM(bank_operations.import) FILTER (WHERE type_operation.cash_flow_type = 'EGR'), 0) AS expense`).
 		Joins("LEFT JOIN type_operations type_operation ON type_operation.id = bank_operations.type_operation_id AND type_operation.deleted_at IS NULL").
 		Scan(&row).Error
 
@@ -188,8 +188,8 @@ func (r *repo) ActivityPerDay(ctx context.Context, from time.Time, userID *uuid.
 	err := operationScope(r.db.WithContext(ctx).Session(&gorm.Session{}), userID).
 		Select(`DATE(bank_operations.date) AS day,
 			COUNT(*) AS operations,
-			COALESCE(SUM(bank_operations.import) FILTER (WHERE type_operation.code = 'ING'), 0) AS income,
-			COALESCE(SUM(bank_operations.import) FILTER (WHERE type_operation.code = 'EGR'), 0) AS expense`).
+			COALESCE(SUM(bank_operations.import) FILTER (WHERE type_operation.cash_flow_type = 'ING'), 0) AS income,
+			COALESCE(SUM(bank_operations.import) FILTER (WHERE type_operation.cash_flow_type = 'EGR'), 0) AS expense`).
 		Joins("LEFT JOIN type_operations type_operation ON type_operation.id = bank_operations.type_operation_id AND type_operation.deleted_at IS NULL").
 		Where("bank_operations.date >= ?", from).
 		Group("day").

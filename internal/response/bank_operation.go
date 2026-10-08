@@ -36,6 +36,7 @@ type BankOperation struct {
 	EndBalance        string                `json:"end_balance"`
 	TypeOperationID   string                `json:"type_operation_id"`
 	TypeOperationCode string                `json:"type_operation_code,omitempty"`
+	CashFlowType      string                `json:"cash_flow_type,omitempty"`
 	AccountID         string                `json:"account_id,omitempty"`
 	AccountNumber     string                `json:"account_number,omitempty"`
 	CashSessionID     string                `json:"cash_session_id,omitempty"`
@@ -54,6 +55,7 @@ func BankOperationToResponse(b *model.BankOperation) *BankOperation {
 		EndBalance:        b.EndBalance.StringFixed(2),
 		TypeOperationID:   b.TypeOperationID.String(),
 		TypeOperationCode: b.TypeOperation.Code,
+		CashFlowType:      b.TypeOperation.CashFlowType,
 		Info:              OperationInformationToResponse(b.OperationInformation),
 		CreatedAt:         b.CreatedAt,
 	}

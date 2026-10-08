@@ -13,11 +13,13 @@ import (
 )
 
 func SeedUsers(db *gorm.DB, passOne string) {
-	seedUser(db, constants.AdminOneID, "Admin One", "admin1@eicap.com", passOne, enum.Admin)
+	seedUser(db, constants.AdminOneID, "Admin One", "admin1", "admin1@eicap.com", passOne, enum.Admin)
 }
 
-func seedUser(db *gorm.DB, id uuid.UUID, name, email, password string, role enum.Permission) {
+func seedUser(db *gorm.DB, id uuid.UUID, name, userName, email, password string, role enum.Permission) {
 	emailCopy := email
+	userNameCopy := userName
+
 	if password == "" {
 		log.Printf("Skipping %s: no password configured", email)
 		return
@@ -42,6 +44,7 @@ func seedUser(db *gorm.DB, id uuid.UUID, name, email, password string, role enum
 	user := model.User{
 		ID:       id,
 		Name:     name,
+		UserName: &userNameCopy,
 		Email:    &emailCopy,
 		Password: hashedPassword,
 		Avatar:   "",
