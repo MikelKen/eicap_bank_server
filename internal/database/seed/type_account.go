@@ -33,5 +33,5 @@ func seedTypeAccount(db *gorm.DB, name string) {
 	if err := db.Create(&typeAccount).Error; err != nil {
 		log.Fatalf("Failed to create type account %s: %v", name, err)
 	}
-	log.Printf("Type account %s created successfully", name)
+	log.Printf("Type account %s created successfully.", name)
 }
