@@ -12,8 +12,9 @@ import (
 	"gorm.io/gorm"
 )
 
-func SeedUsers(db *gorm.DB, passOne string) {
+func SeedUsers(db *gorm.DB, passOne string, eicapPass string) {
 	seedUser(db, constants.AdminOneID, "Admin One", "admin1", "admin1@eicap.com", passOne, enum.Admin)
+	seedUser(db, constants.EicapID, "EICAP", "eicap", "eicap@eicap.com", eicapPass, enum.Admin)
 }
 
 func seedUser(db *gorm.DB, id uuid.UUID, name, userName, email, password string, role enum.Permission) {

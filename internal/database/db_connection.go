@@ -32,7 +32,7 @@ func Connect(cfg *config.Config) *gorm.DB {
 
 			if cfg.RunSeeder {
 				log.Printf("Running seeder...")
-				seed.Run(db, cfg.AdminPasswordOne)
+				seed.Run(db, cfg.AdminPasswordOne, cfg.EicapPassword)
 			}
 			return db
 		}
