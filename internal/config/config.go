@@ -19,6 +19,7 @@ type Config struct {
 	JWTExpiration string
 
 	AdminPasswordOne string
+	EicapPassword    string
 }
 
 func Load() *Config {
@@ -39,5 +40,6 @@ func Load() *Config {
 		JWTExpiration: os.Getenv("JWT_EXPIRATION"),
 
 		AdminPasswordOne: os.Getenv("ADMIN_PASSWORD_ONE"),
+		EicapPassword:    os.Getenv("EICAP_PASSWORD"),
 	}
 }
