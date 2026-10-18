@@ -63,7 +63,7 @@ func (s *service) Login(input *Login) (string, time.Duration, *response.User, er
 
 	token, err := pkg.GenerateToken(user, s.cfg.JWTSecret, expiration)
 	if err != nil {
-		return "", 0, nil, response.InternalServerError("Error al generar token de acceso")
+		return "", 0, nil, response.InternalServerError("Error al generar token de acceso.")
 	}
 
 	userResponse := response.UserToResponse(user, &token)
